@@ -36,9 +36,7 @@ from dataclasses import dataclass
 from difflib import SequenceMatcher
 from openpyxl import Workbook
 
-# Import the core functionality from your provided modules
-# Note: In production, these would be properly packaged modules
-# For now, I'm including the key classes inline
+# just important the core functionality from modules
 
 app = Flask(__name__)
 CORS(app)
@@ -50,7 +48,6 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# Temporary file storage
 UPLOAD_FOLDER = tempfile.mkdtemp()
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024  # 50MB max file size
@@ -181,7 +178,7 @@ class OpenMotorStandardizer:
             for page in doc:
                 content += page.get_text()
             doc.close()
-            return content[:10000]  # Limit to first 10k chars
+            return content[:10000]  # limit to first 10k chars :)
         except Exception as e:
             logger.error(f"Error reading PDF: {e}")
             return ""
@@ -228,7 +225,6 @@ class OpenMotorStandardizer:
             
             analysis['columns'][col] = col_analysis
             
-            # Identify likely column types
             col_lower = col.lower()
             if any(x in col_lower for x in ['subj', 'participant', 'sn', 'id']):
                 analysis['likely_participant_cols'].append(col)
@@ -285,7 +281,6 @@ Return as JSON with keys: variable_mappings, units, conditions, abbreviations"""
             mapped = False
             col_lower = col_name.lower().strip()
             
-            # Try common mappings first
             for abbrev, standard in self.common_mappings.items():
                 if col_lower == abbrev or col_lower.replace('_', '') == abbrev:
                     if standard not in existing_mappings:
@@ -305,7 +300,6 @@ Return as JSON with keys: variable_mappings, units, conditions, abbreviations"""
             if not mapped:
                 unmapped_columns.append((col_name, col_info))
         
-        # Use Claude for remaining columns
         if unmapped_columns:
             prompt = f"""Map these columns to OpenMotor standards. Be AGGRESSIVE in finding mappings.
 
@@ -372,16 +366,13 @@ Return JSON array with mappings."""
         existing_mappings = set()
         all_mappings = []
         
-        # Get mappings
         new_mappings = self.get_aggressive_column_mapping(
             csv_analysis, paper_info, existing_mappings
         )
         all_mappings.extend(new_mappings)
         
-        # Apply transformations
         standardized_df = self.apply_transformations(df, all_mappings, paper_info)
         
-        # Generate quality report
         quality_report = self.generate_quality_report(df, standardized_df, all_mappings)
         
         return standardized_df, quality_report
@@ -393,7 +384,6 @@ Return JSON array with mappings."""
         """Apply transformations to create standardized dataframe"""
         standardized_df = pd.DataFrame()
         
-        # Map required columns
         for req_col in self.required_columns.keys():
             mapping = next((m for m in mappings if m.standardized_name == req_col), None)
             if mapping and mapping.original_name in df.columns:
@@ -401,18 +391,15 @@ Return JSON array with mappings."""
             else:
                 standardized_df[req_col] = "Value was not sure"
         
-        # Map suggested columns
         for sug_col in self.suggested_columns.keys():
             mapping = next((m for m in mappings if m.standardized_name == sug_col), None)
             if mapping and mapping.original_name in df.columns:
                 standardized_df[sug_col] = df[mapping.original_name]
         
-        # Add custom columns
         for mapping in mappings:
             if mapping.is_custom and mapping.original_name in df.columns:
                 standardized_df[mapping.standardized_name] = df[mapping.original_name]
         
-        # Add remaining unmapped columns
         mapped_original_cols = {m.original_name for m in mappings}
         for col in df.columns:
             if col not in mapped_original_cols:
@@ -513,21 +500,18 @@ class OpenMotorTemplateFiller:
                 'most_common_block_size': 'N/A'
             }
             
-            # Try to find participant column
             participant_cols = [col for col in df.columns if any(
                 x in col.lower() for x in ['participant', 'subject', 'subj', 'sn', 'id']
             )]
             if participant_cols:
                 analysis['num_subjects'] = df[participant_cols[0]].nunique()
             
-            # Try to find condition column
             condition_cols = [col for col in df.columns if any(
                 x in col.lower() for x in ['condition', 'cond', 'group']
             )]
             if condition_cols:
                 analysis['num_conditions'] = df[condition_cols[0]].nunique()
             
-            # Try to find block info
             block_cols = [col for col in df.columns if 'block' in col.lower()]
             if block_cols and participant_cols:
                 block_sizes = df.groupby(block_cols[0]).size()
@@ -567,7 +551,6 @@ Theory_status must be one of: supports/challenges/neutral"""
             
             result = json.loads(response.content[0].text)
             
-            # Add CSV-specific data
             result['Name_in_database'] = csv_analysis.get('file_name', '')
             result['Num_subjects'] = str(csv_analysis.get('num_subjects', 'N/A'))
             result['Block_size'] = str(csv_analysis.get('most_common_block_size', 'N/A'))
@@ -600,7 +583,6 @@ Theory_status must be one of: supports/challenges/neutral"""
                 pdf_content, csv_analysis, i
             )
             
-            # Ensure all fields are present
             for field in self.template_fields:
                 if field not in extracted_values:
                     extracted_values[field] = 'N/A'
@@ -665,8 +647,6 @@ If you cannot find Experiment {experiment_number}, return "EXPERIMENT_NOT_FOUND"
             return f"Error: {str(e)}"
 
 
-# API Routes
-
 @app.route('/api/health', methods=['GET'])
 def health_check():
     """Health check endpoint"""
@@ -689,7 +669,6 @@ def standardize_csv():
         csv_file = request.files['csv_file']
         pdf_file = request.files.get('pdf_file')
         
-        # Save uploaded files
         csv_path = os.path.join(app.config['UPLOAD_FOLDER'], secure_filename(csv_file.filename))
         csv_file.save(csv_path)
         
@@ -698,15 +677,12 @@ def standardize_csv():
             pdf_path = os.path.join(app.config['UPLOAD_FOLDER'], secure_filename(pdf_file.filename))
             pdf_file.save(pdf_path)
         
-        # Process
         standardizer = OpenMotorStandardizer(api_key)
         standardized_df, quality_report = standardizer.standardize_csv(csv_path, pdf_path)
         
-        # Save output
         output_path = os.path.join(app.config['UPLOAD_FOLDER'], 'standardized_output.csv')
         standardized_df.to_csv(output_path, index=False)
         
-        # Clean up input files
         os.remove(csv_path)
         if pdf_path:
             os.remove(pdf_path)
@@ -735,7 +711,6 @@ def fill_template():
         api_key = request.form['api_key']
         pdf_file = request.files.get('pdf_file')
         
-        # Get CSV files
         csv_files = []
         for key in request.files:
             if key.startswith('csv_file_'):
@@ -744,7 +719,6 @@ def fill_template():
         if not csv_files:
             return jsonify({'error': 'At least one CSV file is required'}), 400
         
-        # Save files
         pdf_path = None
         if pdf_file:
             pdf_path = os.path.join(app.config['UPLOAD_FOLDER'], secure_filename(pdf_file.filename))
@@ -756,15 +730,12 @@ def fill_template():
             csv_file.save(csv_path)
             csv_paths.append(csv_path)
         
-        # Process
         filler = OpenMotorTemplateFiller(api_key)
         df = filler.process_experiments(pdf_path, csv_paths)
         
-        # Save output
         output_path = os.path.join(app.config['UPLOAD_FOLDER'], 'OpenMotor_Description_Template_Filled.xlsx')
         df.to_excel(output_path, index=False)
         
-        # Clean up
         for csv_path in csv_paths:
             os.remove(csv_path)
         if pdf_path:
@@ -798,11 +769,9 @@ def generate_readme():
         pdf_file = request.files['pdf_file']
         experiment_number = int(request.form.get('experiment_number', 1))
         
-        # Save PDF
         pdf_path = os.path.join(app.config['UPLOAD_FOLDER'], secure_filename(pdf_file.filename))
         pdf_file.save(pdf_path)
         
-        # Process
         generator = OpenMotorReadmeGenerator(api_key)
         pdf_content = generator.read_pdf(pdf_path)
         readme_content = generator.generate_readme(pdf_content, experiment_number)
@@ -813,13 +782,11 @@ def generate_readme():
                 'error': f'Experiment {experiment_number} not found in the paper'
             }), 404
         
-        # Save README
         filename = f'Exp{experiment_number}_readme.txt'
         output_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
         with open(output_path, 'w', encoding='utf-8') as f:
             f.write(readme_content)
         
-        # Clean up
         os.remove(pdf_path)
         
         return jsonify({
@@ -860,7 +827,7 @@ def cleanup_files():
             file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
             if os.path.isfile(file_path):
                 file_modified = os.path.getmtime(file_path)
-                if current_time - file_modified > 3600:  # 1 hour
+                if current_time - file_modified > 3600: 
                     os.remove(file_path)
                     deleted_count += 1
         
@@ -872,8 +839,6 @@ def cleanup_files():
         return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
-    # Create upload folder if it doesn't exist
     os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
     
-    # Run the Flask app
     app.run(debug=True, host='0.0.0.0', port=5001)
