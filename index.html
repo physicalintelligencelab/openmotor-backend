@@ -1,261 +1,11 @@
-const CSVStandardizer = ({ apiKey, setApiKey, isProcessing, setIsProcessing, status, setStatus, results, setResults }) => {
-            const [csvFile, setCsvFile] = useState(null);
-            const [pdfFile, setPdfFile] = useState(null);
-            const [progress, setProgress] = useState(0);
-
-            const handleProcess = async () => {
-                if (!apiKey || !csvFile) {
-                    setStatus({ type: 'error', message: 'Please provide API key and CSV file' });
-                    return;
-                }
-
-                setIsProcessing(true);
-                setProgress(0);
-                setStatus({ type: 'info', message: 'Starting CSV standardization...' });
-
-                const formData = new FormData();
-                formData.append('api_key', apiKey);
-                formData.append('csv_file', csvFile);
-                if (pdfFile) {
-                    formData.append('pdf_file', pdfFile);
-                }
-
-                try {
-                    const progressInterval = setInterval(() => {
-                        setProgress(prev => Math.min(prev + 10, 90));
-                    }, 500);
-
-                    const response = await axios.post(`${API_URL}/api/standardize`, formData, {
-                        headers: {
-                            'Content-Type': 'multipart/form-data',
-                        },
-                    });
-
-                    clearInterval(progressInterval);
-                    setProgress(100);
-
-                    if (response.data.success) {
-                        setStatus({ type: 'success', message: 'Standardization complete!' });
-                        setResults({
-                            standardizedFile: response.data.standardized_file,
-                            report: response.data.report,
-                            downloadUrl: response.data.download_url
-                        });
-                    } else {
-                        setStatus({ type: 'error', message: 'Standardization failed' });
-                    }
-                } catch (error) {
-                    clearInterval(progressInterval);
-                    setStatus({ 
-                        type: 'error', 
-                        message: error.response?.data?.error || 'Error processing CSV file'
-                    });
-                    console.error('Error:', error);
-                } finally {
-                    setIsProcessing(false);
-                }
-            };
-
-            const handleDownload = async (url, filename) => {
-                try {
-                    const response = await axios.get(`${API_URL}${url}`, {
-                        responseType: 'blob'
-                    });
-                    
-                    const blob = new Blob([response.data]);
-                    const downloadUrl = window.URL.createObjectURL(blob);
-                    const link = document.createElement('a');
-                    link.href = downloadUrl;
-                    link.download = filename;
-                    document.body.appendChild(link);
-                    link.click();
-                    document.body.removeChild(link);
-                    window.URL.revokeObjectURL(downloadUrl);
-                } catch (error) {
-                    console.error('Download error:', error);
-                    setStatus({ type: 'error', message: 'Error downloading file' });
-                }
-            };
-
-            return (
-                <div>
-                    <div className="api-key-warning">
-                        ⚠️ This tool requires an Anthropic API key to use Claude AI for intelligent column mapping.
-                    </div>
-
-                    <div className="form-group">
-                        <label className="form-label">Anthropic API Key</label>
-                        <input
-                            type="password"
-                            className="form-input"
-                            placeholder="sk-ant-api03-..."
-                            value={apiKey}
-                            onChange={(e) => setApiKey(e.target.value)}
-                        />
-                    </div>
-
-                    <div className="form-group">
-                        <label className="form-label">CSV File to Standardize *</label>
-                        <div className="file-input-wrapper">
-                            <input
-                                type="file"
-                                id="csv-input"
-                                className="file-input"
-                                accept=".csv"
-                                onChange={(e) => setCsvFile(e.target.files[0])}
-                            />
-                            <label htmlFor="csv-input" className="file-input-label">
-                                {csvFile ? csvFile.name : 'Click to select CSV file'}
-                            </label>
-                        </div>
-                    </div>
-
-                    <div className="form-group">
-                        <label className="form-label">Research Paper PDF (Optional)</label>
-                        <div className="file-input-wrapper">
-                            <input
-                                type="file"
-                                id="pdf-input"
-                                className="file-input"
-                                accept=".pdf"
-                                onChange={(e) => setPdfFile(e.target.files[0])}
-                            />
-                            <label htmlFor="pdf-input" className="file-input-label">
-                                {pdfFile ? pdfFile.name : 'Click to select PDF (helps with column mapping)'}
-                            </label>
-                        </div>
-                    </div>
-
-                    <button 
-                        className="btn btn-primary"
-                        onClick={handleProcess}
-                        disabled={isProcessing || !apiKey || !csvFile}
-                    >
-                        {isProcessing ? (
-                            <>
-                                <span className="loading-spinner"></span>
-                                Processing...
-                            </>
-                        ) : (
-                            <>📊 Standardize CSV</>
-                        )}
-                    </button>
-
-                    {isProcessing && (
-                        <div className="progress-bar">
-                            <div className="progress-fill" style={{ width: `${progress}%` }}></div>
-                        </div>
-                    )}
-
-                    {status && (
-                        <div className={`status-message status-${status.type}`}>
-                            {status.type === 'info' && '🔄'}
-                            {status.type === 'success' && '✅'}
-                            {status.type === 'error' && '❌'}
-                            {status.message}
-                        </div>
-                    )}
-
-                    {results && results.report && (
-                        <div className="results-section">
-                            <h3 className="results-title">Standardization Results</h3>
-                            <div className="result-item">
-                                <div className="result-label">Mapped Columns</div>
-                                <div className="result-value">
-                                    {results.report.total_columns_mapped} columns successfully mapped to OpenMotor standards
-                                </div>
-                            </div>
-                            <div className="result-item">
-                                <div className="result-label">Custom Columns</div>
-                                <div className="result-value">{results.report.custom_columns} custom columns preserved</div>
-                            </div>
-                            <div className="result-item">
-                                <div className="result-label">Mapping Confidence</div>
-                                <div className="result-value">
-                                    High: {results.report.mappings_summary.high_confidence}, 
-                                    Medium: {results.report.mappings_summary.medium_confidence}, 
-                                    Low: {results.report.mappings_summary.low_confidence}
-                                </div>
-                            </div>
-                            <div className="result-item">
-                                <div className="result-label">Required Columns Status</div>
-                                <div className="result-value">
-                                    {Object.entries(results.report.required_columns_status).map(([col, status]) => (
-                                        <div key={col}>
-                                            {col}: {status.present ? `✓ ${(status.completeness * 100).toFixed(0)}% complete` : '✗ Missing'}
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-                            <div className="result-item">
-                                <div className="result-label">Output Files</div>
-                                <button 
-                                    className="btn btn-secondary download-btn"
-                                    onClick={() => handleDownload(results.downloadUrl, results.standardizedFile)}
-                                >
-                                    📥 Download Standardized CSV
-                                </button>
-                            </div>
-                        </div>
-                    )}
-                </div>
-            );
-        };
-
-        const TemplateFiller = ({ apiKey, setApiKey, isProcessing, setIsProcessing, status, setStatus, results, setResults }) => {
-            const [pdfFile, setPdfFile] = useState(null);
-            const [experiments, setExperiments] = useState([{ id: 1, csvFile: null }]);
-            const [progress, setProgress] = useState(0);
-
-            const addExperiment = () => {
-                setExperiments([...experiments, { id: experiments.length + 1, csvFile: null }]);
-            };
-
-            const updateExperimentFile = (id, file) => {
-                setExperiments(experiments.map(exp => 
-                    exp.id === id ? { ...exp, csvFile: file } : exp
-                ));
-            };
-
-            const removeExperiment = (id) => {
-                if (experiments.length > 1) {
-                    setExperiments(experiments.filter(exp => exp.id !== id));
-                }
-            };
-
-            const handleProcess = async () => {
-                if (!apiKey || experiments.every(exp => !exp.csvFile)) {
-                    setStatus({ type: 'error', message: 'Please provide API key and at least one CSV file' });
-                    return;
-                }
-
-                setIsProcessing(true);
-                setProgress(0);
-                setStatus({ type: 'info', message: 'Starting template filling process...' });
-
-                const formData = new FormData();
-                formData.append('api_key', apiKey);
-                if (pdfFile) {
-                    formData.append('pdf_file', pdfFile);
-                }
-                
-                experiments.forEach((exp, index) => {
-                    if (exp.csvFile) {
-                        formData.append(`csv_file_${index}`, exp.csvFile);
-                    }
-                });
-
-                try {
-                    const progressInterval = setInterval(() => {
-                        setProgress(prev => Math.min(prev + 5, 90));
-                <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>OpenMotor Research Tools Suite</title>
-    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/1.6.2/axios.min.js"></script>
     <style>
@@ -298,56 +48,6 @@ const CSVStandardizer = ({ apiKey, setApiKey, isProcessing, setIsProcessing, sta
             opacity: 0.9;
         }
 
-        .tools-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
-            gap: 30px;
-            margin-bottom: 40px;
-        }
-
-        .tool-card {
-            background: white;
-            border-radius: 12px;
-            padding: 30px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.08);
-            transition: all 0.3s ease;
-            cursor: pointer;
-            border: 2px solid transparent;
-        }
-
-        .tool-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 8px 25px rgba(0,0,0,0.12);
-        }
-
-        .tool-card.active {
-            border-color: #667eea;
-            background: linear-gradient(to bottom right, #ffffff, #f8f9ff);
-        }
-
-        .tool-icon {
-            width: 60px;
-            height: 60px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            border-radius: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin-bottom: 20px;
-            font-size: 28px;
-        }
-
-        .tool-title {
-            font-size: 1.5rem;
-            margin-bottom: 10px;
-            color: #2c3e50;
-        }
-
-        .tool-description {
-            color: #718096;
-            line-height: 1.6;
-        }
-
         .workspace {
             background: white;
             border-radius: 12px;
@@ -357,9 +57,6 @@ const CSVStandardizer = ({ apiKey, setApiKey, isProcessing, setIsProcessing, sta
         }
 
         .workspace-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
             margin-bottom: 30px;
             padding-bottom: 20px;
             border-bottom: 2px solid #e2e8f0;
@@ -368,19 +65,6 @@ const CSVStandardizer = ({ apiKey, setApiKey, isProcessing, setIsProcessing, sta
         .workspace-title {
             font-size: 1.8rem;
             color: #2c3e50;
-        }
-
-        .close-btn {
-            background: none;
-            border: none;
-            font-size: 24px;
-            color: #a0aec0;
-            cursor: pointer;
-            transition: color 0.2s;
-        }
-
-        .close-btn:hover {
-            color: #4a5568;
         }
 
         .form-group {
@@ -434,33 +118,6 @@ const CSVStandardizer = ({ apiKey, setApiKey, isProcessing, setIsProcessing, sta
         .file-input-label:hover {
             background: #edf2f7;
             border-color: #a0aec0;
-        }
-
-        .file-list {
-            margin-top: 15px;
-        }
-
-        .file-item {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 10px 15px;
-            background: #f7fafc;
-            border-radius: 6px;
-            margin-bottom: 8px;
-        }
-
-        .file-name {
-            color: #4a5568;
-            font-size: 14px;
-        }
-
-        .remove-file {
-            background: none;
-            border: none;
-            color: #e53e3e;
-            cursor: pointer;
-            font-size: 18px;
         }
 
         .btn {
@@ -627,6 +284,7 @@ const CSVStandardizer = ({ apiKey, setApiKey, isProcessing, setIsProcessing, sta
             cursor: pointer;
             transition: all 0.2s;
             font-weight: 600;
+            border: none;
         }
 
         .add-experiment-btn:hover {
@@ -634,20 +292,12 @@ const CSVStandardizer = ({ apiKey, setApiKey, isProcessing, setIsProcessing, sta
             border-color: #a0aec0;
         }
 
-        .preview-section {
-            background: #f7fafc;
-            padding: 20px;
-            border-radius: 8px;
-            margin-top: 20px;
-            max-height: 400px;
-            overflow-y: auto;
-        }
-
-        .preview-content {
-            white-space: pre-wrap;
-            font-family: 'Courier New', monospace;
-            font-size: 14px;
-            line-height: 1.6;
+        .remove-file {
+            background: none;
+            border: none;
+            color: #e53e3e;
+            cursor: pointer;
+            font-size: 18px;
         }
     </style>
 </head>
@@ -655,10 +305,10 @@ const CSVStandardizer = ({ apiKey, setApiKey, isProcessing, setIsProcessing, sta
     <div id="root"></div>
 
     <script type="text/babel">
-        const { useState, useEffect, useRef } = React;
-
-        // API base URL - update this if your backend is on a different host
-        const API_URL = 'http://localhost:5000';
+        const { useState } = React;
+        
+        // API base URL
+        const API_URL = 'https://openmotor-backend.onrender.com';
 
         const App = () => {
             const [apiKey, setApiKey] = useState('');
@@ -878,7 +528,7 @@ const CSVStandardizer = ({ apiKey, setApiKey, isProcessing, setIsProcessing, sta
                 // Download all standardized CSVs
                 for (const item of results.standardized) {
                     await handleDownload(item.downloadUrl, item.standardizedFile);
-                    await new Promise(resolve => setTimeout(resolve, 500)); // Small delay between downloads
+                    await new Promise(resolve => setTimeout(resolve, 500));
                 }
                 
                 // Download template
@@ -1074,10 +724,8 @@ const CSVStandardizer = ({ apiKey, setApiKey, isProcessing, setIsProcessing, sta
             );
         };
 
-        ReactDOM.render(<App />, document.getElementById('root'));
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
     </script>
 </body>
 </html>
-    </script>
-</body>
-                            </html>
