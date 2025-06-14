@@ -311,7 +311,8 @@
         const API_URL = 'https://openmotor-backend.onrender.com';
 
         const App = () => {
-            const [apiKey, setApiKey] = useState('');
+            // Hardcoded API key - WARNING: This is visible to anyone who views your site
+            const [apiKey, setApiKey] = useState('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');
             const [isProcessing, setIsProcessing] = useState(false);
             const [status, setStatus] = useState(null);
             const [results, setResults] = useState(null);
@@ -546,20 +547,9 @@
 
             return (
                 <div>
-                    <div className="api-key-warning">
-                        ⚠️ This tool processes everything at once: standardizes CSVs, fills the template, and generates READMEs.
-                    </div>
+                    {/* Removed API key input field since it's now hardcoded */}
 
-                    <div className="form-group">
-                        <label className="form-label">Anthropic API Key</label>
-                        <input
-                            type="password"
-                            className="form-input"
-                            placeholder="sk-ant-api03-..."
-                            value={apiKey}
-                            onChange={(e) => setApiKey(e.target.value)}
-                        />
-                    </div>
+                    <div className="form-group"></div>
 
                     <div className="form-group">
                         <label className="form-label">Research Paper PDF (Required for READMEs, helps with CSV mapping)</label>
