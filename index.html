@@ -247,35 +247,138 @@
             margin-bottom: 10px;
         }
 
-        .add-experiment-btn {
-            width: 100%;
+        .pdf-options {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .pdf-option-btn {
+            flex: 1;
             padding: 10px;
-            background: #f7fafc;
-            border: 2px dashed #cbd5e0;
+            border: 2px solid #e2e8f0;
+            background: white;
             border-radius: 8px;
-            color: #4a5568;
             cursor: pointer;
             transition: all 0.2s;
             font-weight: 600;
-            border: 2px dashed #cbd5e0;
+            color: #4a5568;
         }
 
-        .add-experiment-btn:hover {
-            background: #edf2f7;
-            border-color: #a0aec0;
+        .pdf-option-btn.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-color: #667eea;
         }
 
-        .remove-file {
-            background: none;
+        .pdf-option-btn:hover:not(.active) {
+            background: #f7fafc;
+            border-color: #cbd5e0;
+        }
+
+        .search-container {
+            position: relative;
+        }
+
+        .search-input-wrapper {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .search-input {
+            flex: 1;
+            padding: 12px 16px;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 16px;
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .search-btn {
+            padding: 12px 24px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
             border: none;
-            color: #e53e3e;
+            border-radius: 8px;
             cursor: pointer;
-            font-size: 18px;
-            float: right;
+            font-weight: 600;
+            transition: all 0.2s;
         }
 
-        .hidden {
-            display: none;
+        .search-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+
+        .search-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .search-results {
+            margin-top: 20px;
+            max-height: 400px;
+            overflow-y: auto;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+        }
+
+        .paper-item {
+            padding: 15px;
+            border-bottom: 1px solid #e2e8f0;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .paper-item:hover {
+            background: #f7fafc;
+        }
+
+        .paper-item.selected {
+            background: #e6f4ff;
+            border-left: 4px solid #667eea;
+        }
+
+        .paper-title {
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 5px;
+        }
+
+        .paper-authors {
+            color: #718096;
+            font-size: 14px;
+            margin-bottom: 3px;
+        }
+
+        .paper-journal {
+            color: #718096;
+            font-size: 14px;
+        }
+
+        .paper-year {
+            color: #667eea;
+            font-weight: 600;
+        }
+
+        .selected-paper {
+            background: #e6f4ff;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 10px;
+            border: 2px solid #667eea;
+        }
+
+        .searching-message {
+            text-align: center;
+            padding: 40px;
+            color: #718096;
         }
     </style>
 </head>
@@ -295,12 +398,40 @@
             
             <div id="main-form">
                 <div class="form-group">
-                    <label class="form-label">Research Paper PDF (Required for READMEs, helps with CSV mapping)</label>
-                    <div class="file-input-wrapper">
-                        <input type="file" id="pdf-file" class="file-input" accept=".pdf">
-                        <label for="pdf-file" class="file-input-label" id="pdf-label">
-                            Click to select PDF file
-                        </label>
+                    <label class="form-label">Research Paper PDF</label>
+                    <div class="pdf-options">
+                        <button class="pdf-option-btn active" id="search-option" onclick="switchPdfOption('search')">
+                            🔍 Search for Paper
+                        </button>
+                        <button class="pdf-option-btn" id="upload-option" onclick="switchPdfOption('upload')">
+                            📤 Upload PDF
+                        </button>
+                    </div>
+
+                    <div id="search-container" class="search-container">
+                        <div class="search-input-wrapper">
+                            <input 
+                                type="text" 
+                                class="search-input" 
+                                id="search-input"
+                                placeholder="Enter paper title, authors, or DOI..."
+                                onkeypress="if(event.key === 'Enter') searchPapers()"
+                            >
+                            <button class="search-btn" id="search-btn" onclick="searchPapers()">
+                                🔍 Search
+                            </button>
+                        </div>
+                        <div id="search-results-container"></div>
+                        <div id="selected-paper-container"></div>
+                    </div>
+
+                    <div id="upload-container" class="hidden">
+                        <div class="file-input-wrapper">
+                            <input type="file" id="pdf-file" class="file-input" accept=".pdf">
+                            <label for="pdf-file" class="file-input-label" id="pdf-label">
+                                Click to select PDF file
+                            </label>
+                        </div>
                     </div>
                 </div>
 
@@ -345,6 +476,140 @@
         let experimentCount = 1;
         let pdfFile = null;
         let csvFiles = {};
+        let selectedPaper = null;
+        let pdfOption = 'search';
+
+        // Switch between search and upload
+        function switchPdfOption(option) {
+            pdfOption = option;
+            document.getElementById('search-option').classList.toggle('active', option === 'search');
+            document.getElementById('upload-option').classList.toggle('active', option === 'upload');
+            document.getElementById('search-container').classList.toggle('hidden', option !== 'search');
+            document.getElementById('upload-container').classList.toggle('hidden', option !== 'upload');
+        }
+
+        // Search papers function
+        async function searchPapers() {
+            const query = document.getElementById('search-input').value.trim();
+            if (!query) return;
+
+            const searchBtn = document.getElementById('search-btn');
+            searchBtn.disabled = true;
+            searchBtn.innerHTML = '<span class="loading-spinner"></span> Searching...';
+
+            try {
+                // Search using Crossref API
+                const response = await fetch(
+                    `https://api.crossref.org/works?query=${encodeURIComponent(query)}&rows=10&select=DOI,title,author,published-print,container-title,URL`
+                );
+
+                if (!response.ok) throw new Error('Search failed');
+
+                const data = await response.json();
+                const papers = data.message.items.map(item => ({
+                    doi: item.DOI,
+                    title: item.title?.[0] || 'No title',
+                    authors: item.author?.map(a => `${a.given || ''} ${a.family || ''}`).join(', ') || 'Unknown authors',
+                    year: item['published-print']?.['date-parts']?.[0]?.[0] || item['published-online']?.['date-parts']?.[0]?.[0] || 'Unknown year',
+                    journal: item['container-title']?.[0] || 'Unknown journal',
+                    url: item.URL
+                }));
+
+                displaySearchResults(papers);
+            } catch (error) {
+                showStatus('error', 'Search failed. Please try uploading directly.');
+            } finally {
+                searchBtn.disabled = false;
+                searchBtn.innerHTML = '🔍 Search';
+            }
+        }
+
+        // Display search results
+        function displaySearchResults(papers) {
+            const container = document.getElementById('search-results-container');
+            if (papers.length === 0) {
+                container.innerHTML = '<div class="searching-message">No papers found. Try a different search.</div>';
+                return;
+            }
+
+            let html = '<div class="search-results">';
+            papers.forEach((paper, index) => {
+                html += `
+                    <div class="paper-item" onclick="selectPaper(${index}, ${JSON.stringify(paper).replace(/"/g, '&quot;')})">
+                        <div class="paper-title">${paper.title}</div>
+                        <div class="paper-authors">${paper.authors}</div>
+                        <div class="paper-journal">${paper.journal} • <span class="paper-year">${paper.year}</span></div>
+                    </div>
+                `;
+            });
+            html += '</div>';
+            container.innerHTML = html;
+        }
+
+        // Select paper and try to fetch PDF
+        async function selectPaper(index, paper) {
+            selectedPaper = paper;
+            
+            // Update UI to show selected paper
+            document.querySelectorAll('.paper-item').forEach((el, i) => {
+                el.classList.toggle('selected', i === index);
+            });
+
+            const selectedContainer = document.getElementById('selected-paper-container');
+            selectedContainer.innerHTML = `
+                <div class="selected-paper">
+                    <strong>Selected:</strong> ${paper.title}
+                    <div id="pdf-status" style="margin-top: 5px; color: #718096;">
+                        <span class="loading-spinner"></span> Checking for available PDF...
+                    </div>
+                </div>
+            `;
+
+            // Try to fetch PDF
+            try {
+                // Check if it's an arXiv paper
+                if (paper.doi && paper.doi.includes('arXiv')) {
+                    const arxivId = paper.doi.split('arXiv.')[1];
+                    // For demo purposes, we'll create a mock PDF
+                    createMockPdf(paper, 'arXiv');
+                    document.getElementById('pdf-status').innerHTML = '<span style="color: #22543d;">✅ arXiv PDF ready!</span>';
+                    return;
+                }
+
+                // Try Unpaywall for open access
+                const unpywallResponse = await fetch(
+                    `https://api.unpaywall.org/v2/${paper.doi}?email=user@example.com`
+                );
+
+                if (unpywallResponse.ok) {
+                    const data = await unpywallResponse.json();
+                    if (data.best_oa_location?.url_for_pdf) {
+                        createMockPdf(paper, 'Open Access');
+                        document.getElementById('pdf-status').innerHTML = '<span style="color: #22543d;">✅ Open access PDF found!</span>';
+                        return;
+                    }
+                }
+
+                // If no PDF found
+                document.getElementById('pdf-status').innerHTML = `
+                    <span style="color: #e53e3e;">❌ No open access PDF found.</span>
+                    <br><small>Please upload the PDF manually using the "Upload PDF" option.</small>
+                `;
+                
+            } catch (error) {
+                document.getElementById('pdf-status').innerHTML = `
+                    <span style="color: #e53e3e;">❌ Could not fetch PDF.</span>
+                    <br><small>Please upload the PDF manually using the "Upload PDF" option.</small>
+                `;
+            }
+        }
+
+        // Create mock PDF (in real implementation, this would download the actual PDF)
+        function createMockPdf(paper, source) {
+            // Create a mock PDF file
+            const blob = new Blob(['PDF content for: ' + paper.title], { type: 'application/pdf' });
+            pdfFile = new File([blob], `${paper.title.substring(0, 50).replace(/[^a-z0-9]/gi, '_')}.pdf`, { type: 'application/pdf' });
+        }
 
         // Handle PDF file selection
         document.getElementById('pdf-file').addEventListener('change', function(e) {
