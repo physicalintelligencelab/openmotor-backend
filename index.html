@@ -4,6 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>OpenMotor Research Tools Suite</title>
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/1.6.2/axios.min.js"></script>
     <style>
         * {
             margin: 0;
@@ -44,6 +48,56 @@
             opacity: 0.9;
         }
 
+        .tools-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+
+        .tool-card {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+            transition: all 0.3s ease;
+            cursor: pointer;
+            border: 2px solid transparent;
+        }
+
+        .tool-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.12);
+        }
+
+        .tool-card.active {
+            border-color: #667eea;
+            background: linear-gradient(to bottom right, #ffffff, #f8f9ff);
+        }
+
+        .tool-icon {
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 20px;
+            font-size: 28px;
+        }
+
+        .tool-title {
+            font-size: 1.5rem;
+            margin-bottom: 10px;
+            color: #2c3e50;
+        }
+
+        .tool-description {
+            color: #718096;
+            line-height: 1.6;
+        }
+
         .workspace {
             background: white;
             border-radius: 12px;
@@ -53,6 +107,9 @@
         }
 
         .workspace-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
             margin-bottom: 30px;
             padding-bottom: 20px;
             border-bottom: 2px solid #e2e8f0;
@@ -61,6 +118,19 @@
         .workspace-title {
             font-size: 1.8rem;
             color: #2c3e50;
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 24px;
+            color: #a0aec0;
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+
+        .close-btn:hover {
+            color: #4a5568;
         }
 
         .form-group {
@@ -72,6 +142,20 @@
             margin-bottom: 8px;
             font-weight: 600;
             color: #4a5568;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.2s;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: #667eea;
         }
 
         .file-input-wrapper {
@@ -102,6 +186,33 @@
             border-color: #a0aec0;
         }
 
+        .file-list {
+            margin-top: 15px;
+        }
+
+        .file-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 15px;
+            background: #f7fafc;
+            border-radius: 6px;
+            margin-bottom: 8px;
+        }
+
+        .file-name {
+            color: #4a5568;
+            font-size: 14px;
+        }
+
+        .remove-file {
+            background: none;
+            border: none;
+            color: #e53e3e;
+            cursor: pointer;
+            font-size: 18px;
+        }
+
         .btn {
             padding: 12px 30px;
             border: none;
@@ -113,15 +224,11 @@
             display: inline-flex;
             align-items: center;
             gap: 8px;
-            width: 100%;
-            justify-content: center;
         }
 
         .btn-primary {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
-            font-size: 18px;
-            padding: 16px;
         }
 
         .btn-primary:hover {
@@ -138,10 +245,6 @@
         .btn-secondary {
             background: #e2e8f0;
             color: #4a5568;
-            width: auto;
-            padding: 10px 20px;
-            font-size: 14px;
-            margin-top: 10px;
         }
 
         .btn-secondary:hover {
@@ -190,12 +293,6 @@
             border: 1px solid #feb2b2;
         }
 
-        .status-warning {
-            background: #fffaf0;
-            color: #7b341e;
-            border: 1px solid #feb062;
-        }
-
         .results-section {
             margin-top: 30px;
             padding-top: 30px;
@@ -223,6 +320,23 @@
 
         .result-value {
             color: #2c3e50;
+        }
+
+        .download-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .api-key-warning {
+            background: #fffaf0;
+            border: 1px solid #feb062;
+            color: #7b341e;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-size: 14px;
         }
 
         .loading-spinner {
@@ -270,875 +384,768 @@
             border-color: #a0aec0;
         }
 
-        .remove-file {
-            background: none;
-            border: none;
-            color: #e53e3e;
-            cursor: pointer;
-            font-size: 18px;
-            float: right;
-        }
-
-        .hidden {
-            display: none !important;
-        }
-
-        .pdf-options {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 15px;
-        }
-
-        .pdf-option-btn {
-            flex: 1;
-            padding: 10px;
-            border: 2px solid #e2e8f0;
-            background: white;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: all 0.2s;
-            font-weight: 600;
-            color: #4a5568;
-        }
-
-        .pdf-option-btn.active {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border-color: #667eea;
-        }
-
-        .pdf-option-btn:hover:not(.active) {
-            background: #f7fafc;
-            border-color: #cbd5e0;
-        }
-
-        .search-container {
-            position: relative;
-        }
-
-        .search-input-wrapper {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 10px;
-        }
-
-        .search-input {
-            flex: 1;
-            padding: 12px 16px;
-            border: 2px solid #e2e8f0;
-            border-radius: 8px;
-            font-size: 16px;
-        }
-
-        .search-input:focus {
-            outline: none;
-            border-color: #667eea;
-        }
-
-        .search-btn {
-            padding: 12px 24px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            font-weight: 600;
-            transition: all 0.2s;
-        }
-
-        .search-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
-        }
-
-        .search-btn:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-            transform: none;
-        }
-
-        .search-results {
-            margin-top: 20px;
-            max-height: 400px;
-            overflow-y: auto;
-            border: 1px solid #e2e8f0;
-            border-radius: 8px;
-        }
-
-        .paper-item {
-            padding: 15px;
-            border-bottom: 1px solid #e2e8f0;
-            cursor: pointer;
-            transition: background 0.2s;
-        }
-
-        .paper-item:hover {
-            background: #f7fafc;
-        }
-
-        .paper-item.selected {
-            background: #e6f4ff;
-            border-left: 4px solid #667eea;
-        }
-
-        .paper-title {
-            font-weight: 600;
-            color: #2c3e50;
-            margin-bottom: 5px;
-        }
-
-        .paper-authors {
-            color: #718096;
-            font-size: 14px;
-            margin-bottom: 3px;
-        }
-
-        .paper-journal {
-            color: #718096;
-            font-size: 14px;
-        }
-
-        .paper-year {
-            color: #667eea;
-            font-weight: 600;
-        }
-
-        .selected-paper {
-            background: #e6f4ff;
-            padding: 15px;
-            border-radius: 8px;
-            margin-top: 10px;
-            border: 2px solid #667eea;
-        }
-
-        .searching-message {
-            text-align: center;
-            padding: 40px;
-            color: #718096;
-        }
-
-        .pdf-search-status {
-            margin-top: 10px;
-            padding: 10px;
-            background: #f7fafc;
-            border-radius: 6px;
-            font-size: 14px;
-        }
-
-        .pdf-found {
-            color: #22543d;
-            background: #e6ffed;
-            border: 1px solid #9ae6b4;
-        }
-
-        .pdf-not-found {
-            color: #e53e3e;
-            background: #fff5f5;
-            border: 1px solid #feb2b2;
-        }
-
-        .api-key-section {
+        .preview-section {
             background: #f7fafc;
             padding: 20px;
             border-radius: 8px;
-            margin-bottom: 20px;
-            border: 2px solid #e2e8f0;
+            margin-top: 20px;
+            max-height: 400px;
+            overflow-y: auto;
         }
 
-        .api-key-input {
-            width: 100%;
-            padding: 12px 16px;
-            border: 2px solid #e2e8f0;
-            border-radius: 8px;
-            font-size: 16px;
-            margin-top: 10px;
-        }
-
-        .api-key-input:focus {
-            outline: none;
-            border-color: #667eea;
-        }
-
-        .api-key-note {
+        .preview-content {
+            white-space: pre-wrap;
+            font-family: 'Courier New', monospace;
             font-size: 14px;
-            color: #718096;
-            margin-top: 8px;
+            line-height: 1.6;
         }
     </style>
 </head>
 <body>
-    <div class="header">
-        <div class="container">
-            <h1>OpenMotor Complete Research Pipeline</h1>
-            <p>Process all your motor learning research data in one go</p>
-        </div>
-    </div>
+    <div id="root"></div>
 
-    <div class="container">
-        <div class="workspace">
-            <div class="workspace-header">
-                <h2 class="workspace-title">🚀 All-in-One Research Data Processor</h2>
-            </div>
-            
-            <div id="main-form">
-                <!-- API Key Section -->
-                <div class="api-key-section">
-                    <label class="form-label">🔑 Anthropic API Key (Optional - using default if empty)</label>
-                    <input 
-                        type="password" 
-                        id="custom-api-key" 
-                        class="api-key-input" 
-                        placeholder="sk-ant-api03-..."
-                    >
-                    <div class="api-key-note">
-                        💡 Leave empty to use the default key. Only add your own if the default isn't working.
+    <script type="text/babel">
+        const { useState, useEffect, useRef } = React;
+
+        // API base URL - update this if your backend is on a different host
+        const API_URL = 'https://openmotor-backend.onrender.com';
+
+        const App = () => {
+            const [selectedTool, setSelectedTool] = useState(null);
+            const [apiKey, setApiKey] = useState('');
+            const [isProcessing, setIsProcessing] = useState(false);
+            const [status, setStatus] = useState(null);
+            const [results, setResults] = useState(null);
+
+            const tools = [
+                {
+                    id: 'standardizer',
+                    icon: '📊',
+                    title: 'CSV Standardizer',
+                    description: 'Standardize motor research CSV data to OpenMotor format with intelligent column mapping'
+                },
+                {
+                    id: 'template',
+                    icon: '📝',
+                    title: 'Template Filler',
+                    description: 'Automatically fill OpenMotor description templates from research papers and CSV files'
+                },
+                {
+                    id: 'readme',
+                    icon: '📄',
+                    title: 'README Generator',
+                    description: 'Generate comprehensive README files for experiments from research papers'
+                }
+            ];
+
+            const handleToolSelect = (toolId) => {
+                setSelectedTool(toolId);
+                setStatus(null);
+                setResults(null);
+            };
+
+            const handleClose = () => {
+                setSelectedTool(null);
+                setStatus(null);
+                setResults(null);
+            };
+
+            return (
+                <div>
+                    <div className="header">
+                        <div className="container">
+                            <h1>OpenMotor Research Tools Suite</h1>
+                            <p>Streamline your motor learning research data processing</p>
+                        </div>
+                    </div>
+
+                    <div className="container">
+                        {!selectedTool ? (
+                            <div className="tools-grid">
+                                {tools.map(tool => (
+                                    <div
+                                        key={tool.id}
+                                        className="tool-card"
+                                        onClick={() => handleToolSelect(tool.id)}
+                                    >
+                                        <div className="tool-icon">{tool.icon}</div>
+                                        <h3 className="tool-title">{tool.title}</h3>
+                                        <p className="tool-description">{tool.description}</p>
+                                    </div>
+                                ))}
+                            </div>
+                        ) : (
+                            <div className="workspace">
+                                <div className="workspace-header">
+                                    <h2 className="workspace-title">
+                                        {tools.find(t => t.id === selectedTool).title}
+                                    </h2>
+                                    <button className="close-btn" onClick={handleClose}>✕</button>
+                                </div>
+
+                                {selectedTool === 'standardizer' && (
+                                    <CSVStandardizer 
+                                        apiKey={apiKey}
+                                        setApiKey={setApiKey}
+                                        isProcessing={isProcessing}
+                                        setIsProcessing={setIsProcessing}
+                                        status={status}
+                                        setStatus={setStatus}
+                                        results={results}
+                                        setResults={setResults}
+                                    />
+                                )}
+
+                                {selectedTool === 'template' && (
+                                    <TemplateFiller
+                                        apiKey={apiKey}
+                                        setApiKey={setApiKey}
+                                        isProcessing={isProcessing}
+                                        setIsProcessing={setIsProcessing}
+                                        status={status}
+                                        setStatus={setStatus}
+                                        results={results}
+                                        setResults={setResults}
+                                    />
+                                )}
+
+                                {selectedTool === 'readme' && (
+                                    <ReadmeGenerator
+                                        apiKey={apiKey}
+                                        setApiKey={setApiKey}
+                                        isProcessing={isProcessing}
+                                        setIsProcessing={setIsProcessing}
+                                        status={status}
+                                        setStatus={setStatus}
+                                        results={results}
+                                        setResults={setResults}
+                                    />
+                                )}
+                            </div>
+                        )}
                     </div>
                 </div>
+            );
+        };
 
-                <div class="form-group">
-                    <label class="form-label">Research Paper PDF</label>
-                    <div class="pdf-options">
-                        <button class="pdf-option-btn active" id="search-option" onclick="switchPdfOption('search')">
-                            🔍 Search for Paper
-                        </button>
-                        <button class="pdf-option-btn" id="upload-option" onclick="switchPdfOption('upload')">
-                            📤 Upload PDF
-                        </button>
+        const CSVStandardizer = ({ apiKey, setApiKey, isProcessing, setIsProcessing, status, setStatus, results, setResults }) => {
+            const [csvFile, setCsvFile] = useState(null);
+            const [pdfFile, setPdfFile] = useState(null);
+            const [progress, setProgress] = useState(0);
+
+            const handleProcess = async () => {
+                if (!apiKey || !csvFile) {
+                    setStatus({ type: 'error', message: 'Please provide API key and CSV file' });
+                    return;
+                }
+
+                setIsProcessing(true);
+                setProgress(0);
+                setStatus({ type: 'info', message: 'Starting CSV standardization...' });
+
+                const formData = new FormData();
+                formData.append('api_key', apiKey);
+                formData.append('csv_file', csvFile);
+                if (pdfFile) {
+                    formData.append('pdf_file', pdfFile);
+                }
+
+                try {
+                    const progressInterval = setInterval(() => {
+                        setProgress(prev => Math.min(prev + 10, 90));
+                    }, 500);
+
+                    const response = await axios.post(`${API_URL}/api/standardize`, formData, {
+                        headers: {
+                            'Content-Type': 'multipart/form-data',
+                        },
+                    });
+
+                    clearInterval(progressInterval);
+                    setProgress(100);
+
+                    if (response.data.success) {
+                        setStatus({ type: 'success', message: 'Standardization complete!' });
+                        setResults({
+                            standardizedFile: response.data.standardized_file,
+                            report: response.data.report,
+                            downloadUrl: response.data.download_url
+                        });
+                    } else {
+                        setStatus({ type: 'error', message: 'Standardization failed' });
+                    }
+                } catch (error) {
+                    clearInterval(progressInterval);
+                    setStatus({ 
+                        type: 'error', 
+                        message: error.response?.data?.error || 'Error processing CSV file'
+                    });
+                    console.error('Error:', error);
+                } finally {
+                    setIsProcessing(false);
+                }
+            };
+
+            const handleDownload = async (url, filename) => {
+                try {
+                    const response = await axios.get(`${API_URL}${url}`, {
+                        responseType: 'blob'
+                    });
+                    
+                    const blob = new Blob([response.data]);
+                    const downloadUrl = window.URL.createObjectURL(blob);
+                    const link = document.createElement('a');
+                    link.href = downloadUrl;
+                    link.download = filename;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    window.URL.revokeObjectURL(downloadUrl);
+                } catch (error) {
+                    console.error('Download error:', error);
+                    setStatus({ type: 'error', message: 'Error downloading file' });
+                }
+            };
+
+            return (
+                <div>
+                    <div className="api-key-warning">
+                        ⚠️ This tool requires an Anthropic API key to use Claude AI for intelligent column mapping.
                     </div>
 
-                    <div id="search-container" class="search-container">
-                        <div class="search-input-wrapper">
-                            <input 
-                                type="text" 
-                                class="search-input" 
-                                id="search-input"
-                                placeholder="Enter paper title, authors, or DOI..."
-                                onkeypress="if(event.key === 'Enter') searchPapers()"
-                            >
-                            <button class="search-btn" id="search-btn" onclick="searchPapers()">
-                                🔍 Search
-                            </button>
-                        </div>
-                        <div id="search-results-container"></div>
-                        <div id="selected-paper-container"></div>
+                    <div className="form-group">
+                        <label className="form-label">Anthropic API Key</label>
+                        <input
+                            type="password"
+                            className="form-input"
+                            placeholder="sk-ant-api03-..."
+                            value={apiKey}
+                            onChange={(e) => setApiKey(e.target.value)}
+                        />
                     </div>
 
-                    <div id="upload-container" class="hidden">
-                        <div class="file-input-wrapper">
-                            <input type="file" id="pdf-file" class="file-input" accept=".pdf">
-                            <label for="pdf-file" class="file-input-label" id="pdf-label">
-                                Click to select PDF file
+                    <div className="form-group">
+                        <label className="form-label">CSV File to Standardize *</label>
+                        <div className="file-input-wrapper">
+                            <input
+                                type="file"
+                                id="csv-input"
+                                className="file-input"
+                                accept=".csv"
+                                onChange={(e) => setCsvFile(e.target.files[0])}
+                            />
+                            <label htmlFor="csv-input" className="file-input-label">
+                                {csvFile ? csvFile.name : 'Click to select CSV file'}
                             </label>
                         </div>
                     </div>
-                </div>
 
-                <div class="form-group">
-                    <label class="form-label">Experiment CSV Files (One per experiment)</label>
-                    <div class="experiment-inputs" id="experiments-container">
-                        <div class="experiment-item" data-exp-id="1">
-                            <span style="font-weight: 600;">Experiment 1</span>
-                            <div class="file-input-wrapper" style="margin-top: 10px;">
-                                <input type="file" id="csv-1" class="file-input csv-input" accept=".csv" data-exp-id="1">
-                                <label for="csv-1" class="file-input-label csv-label" data-exp-id="1">
-                                    Click to select CSV file
-                                </label>
+                    <div className="form-group">
+                        <label className="form-label">Research Paper PDF (Optional)</label>
+                        <div className="file-input-wrapper">
+                            <input
+                                type="file"
+                                id="pdf-input"
+                                className="file-input"
+                                accept=".pdf"
+                                onChange={(e) => setPdfFile(e.target.files[0])}
+                            />
+                            <label htmlFor="pdf-input" className="file-input-label">
+                                {pdfFile ? pdfFile.name : 'Click to select PDF (helps with column mapping)'}
+                            </label>
+                        </div>
+                    </div>
+
+                    <button 
+                        className="btn btn-primary"
+                        onClick={handleProcess}
+                        disabled={isProcessing || !apiKey || !csvFile}
+                    >
+                        {isProcessing ? (
+                            <>
+                                <span className="loading-spinner"></span>
+                                Processing...
+                            </>
+                        ) : (
+                            <>📊 Standardize CSV</>
+                        )}
+                    </button>
+
+                    {isProcessing && (
+                        <div className="progress-bar">
+                            <div className="progress-fill" style={{ width: `${progress}%` }}></div>
+                        </div>
+                    )}
+
+                    {status && (
+                        <div className={`status-message status-${status.type}`}>
+                            {status.type === 'info' && '🔄'}
+                            {status.type === 'success' && '✅'}
+                            {status.type === 'error' && '❌'}
+                            {status.message}
+                        </div>
+                    )}
+
+                    {results && results.report && (
+                        <div className="results-section">
+                            <h3 className="results-title">Standardization Results</h3>
+                            <div className="result-item">
+                                <div className="result-label">Mapped Columns</div>
+                                <div className="result-value">
+                                    {results.report.total_columns_mapped} columns successfully mapped to OpenMotor standards
+                                </div>
+                            </div>
+                            <div className="result-item">
+                                <div className="result-label">Custom Columns</div>
+                                <div className="result-value">{results.report.custom_columns} custom columns preserved</div>
+                            </div>
+                            <div className="result-item">
+                                <div className="result-label">Mapping Confidence</div>
+                                <div className="result-value">
+                                    High: {results.report.mappings_summary.high_confidence}, 
+                                    Medium: {results.report.mappings_summary.medium_confidence}, 
+                                    Low: {results.report.mappings_summary.low_confidence}
+                                </div>
+                            </div>
+                            <div className="result-item">
+                                <div className="result-label">Required Columns Status</div>
+                                <div className="result-value">
+                                    {Object.entries(results.report.required_columns_status).map(([col, status]) => (
+                                        <div key={col}>
+                                            {col}: {status.present ? `✓ ${(status.completeness * 100).toFixed(0)}% complete` : '✗ Missing'}
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                            <div className="result-item">
+                                <div className="result-label">Output Files</div>
+                                <button 
+                                    className="btn btn-secondary download-btn"
+                                    onClick={() => handleDownload(results.downloadUrl, results.standardizedFile)}
+                                >
+                                    📥 Download Standardized CSV
+                                </button>
                             </div>
                         </div>
-                    </div>
-                    <button class="add-experiment-btn" onclick="addExperiment()">
-                        + Add Another Experiment
-                    </button>
+                    )}
                 </div>
+            );
+        };
 
-                <button class="btn btn-primary" id="process-btn" onclick="processFiles()">
-                    🚀 Process All Files
-                </button>
+        const TemplateFiller = ({ apiKey, setApiKey, isProcessing, setIsProcessing, status, setStatus, results, setResults }) => {
+            const [pdfFile, setPdfFile] = useState(null);
+            const [experiments, setExperiments] = useState([{ id: 1, csvFile: null }]);
+            const [progress, setProgress] = useState(0);
 
-                <div class="progress-bar hidden" id="progress-container">
-                    <div class="progress-fill" id="progress-bar" style="width: 0%"></div>
-                </div>
-
-                <div id="status-container"></div>
-                <div id="results-container"></div>
-            </div>
-        </div>
-    </div>
-
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/1.6.2/axios.min.js"></script>
-    <script>
-        // Configuration
-        const API_URL = 'https://openmotor-backend.onrender.com';
-        const DEFAULT_API_KEY = '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';
-        
-        let experimentCount = 1;
-        let pdfFile = null;
-        let csvFiles = {};
-        let selectedPaper = null;
-        let pdfOption = 'search';
-
-        // Get API key (use custom if provided, otherwise default)
-        function getApiKey() {
-            const customKey = document.getElementById('custom-api-key').value.trim();
-            return customKey || DEFAULT_API_KEY;
-        }
-
-        // Switch between search and upload
-        function switchPdfOption(option) {
-            pdfOption = option;
-            document.getElementById('search-option').classList.toggle('active', option === 'search');
-            document.getElementById('upload-option').classList.toggle('active', option === 'upload');
-            
-            // Properly hide/show containers
-            if (option === 'search') {
-                document.getElementById('search-container').classList.remove('hidden');
-                document.getElementById('upload-container').classList.add('hidden');
-            } else {
-                document.getElementById('search-container').classList.add('hidden');
-                document.getElementById('upload-container').classList.remove('hidden');
-            }
-        }
-
-        // Enhanced paper search with multiple sources
-        async function searchPapers() {
-            const query = document.getElementById('search-input').value.trim();
-            if (!query) {
-                showStatus('warning', 'Please enter a search query');
-                return;
-            }
-
-            const searchBtn = document.getElementById('search-btn');
-            searchBtn.disabled = true;
-            searchBtn.innerHTML = '<span class="loading-spinner"></span> Searching...';
-            
-            showStatus('info', 'Searching multiple databases for papers...');
-
-            try {
-                // Search using Crossref API first
-                const response = await fetch(
-                    `https://api.crossref.org/works?query=${encodeURIComponent(query)}&rows=15&select=DOI,title,author,published-print,published-online,container-title,URL,link`
-                );
-
-                if (!response.ok) throw new Error('Search failed');
-
-                const data = await response.json();
-                const papers = data.message.items.map(item => ({
-                    doi: item.DOI || '',
-                    title: item.title?.[0] || 'No title',
-                    authors: item.author?.map(a => `${a.given || ''} ${a.family || ''}`).join(', ') || 'Unknown authors',
-                    year: item['published-print']?.['date-parts']?.[0]?.[0] || 
-                           item['published-online']?.['date-parts']?.[0]?.[0] || 
-                           'Unknown year',
-                    journal: item['container-title']?.[0] || 'Unknown journal',
-                    url: item.URL || '',
-                    links: item.link || []
-                }));
-
-                displaySearchResults(papers);
-                showStatus('success', `Found ${papers.length} papers. Click on one to check for PDFs.`);
-            } catch (error) {
-                console.error('Search error:', error);
-                showStatus('error', 'Search failed. Please try uploading directly.');
-            } finally {
-                searchBtn.disabled = false;
-                searchBtn.innerHTML = '🔍 Search';
-            }
-        }
-
-        // Display search results
-        function displaySearchResults(papers) {
-            const container = document.getElementById('search-results-container');
-            if (papers.length === 0) {
-                container.innerHTML = '<div class="searching-message">No papers found. Try a different search.</div>';
-                return;
-            }
-
-            let html = '<div class="search-results">';
-            papers.forEach((paper, index) => {
-                const paperJson = JSON.stringify(paper).replace(/"/g, '&quot;');
-                html += `
-                    <div class="paper-item" onclick="selectPaper(${index}, ${paperJson})">
-                        <div class="paper-title">${escapeHtml(paper.title)}</div>
-                        <div class="paper-authors">${escapeHtml(paper.authors)}</div>
-                        <div class="paper-journal">${escapeHtml(paper.journal)} • <span class="paper-year">${paper.year}</span></div>
-                    </div>
-                `;
-            });
-            html += '</div>';
-            container.innerHTML = html;
-        }
-
-        // Escape HTML to prevent XSS
-        function escapeHtml(text) {
-            const div = document.createElement('div');
-            div.textContent = text;
-            return div.innerHTML;
-        }
-
-        // ==================== START OF UPDATED PDF FETCH CODE ====================
-        // THIS IS THE MAIN CHANGE - Now uses backend API instead of frontend-only checks
-        // Enhanced PDF search using backend
-        async function selectPaper(index, paper) {
-            selectedPaper = paper;
-            
-            // Update UI to show selected paper
-            document.querySelectorAll('.paper-item').forEach((el, i) => {
-                el.classList.toggle('selected', i === index);
-            });
-
-            const selectedContainer = document.getElementById('selected-paper-container');
-            selectedContainer.innerHTML = `
-                <div class="selected-paper">
-                    <strong>Selected:</strong> ${escapeHtml(paper.title)}
-                    <div class="pdf-search-status">
-                        <span class="loading-spinner"></span> Searching for PDF across all sources...
-                    </div>
-                </div>
-            `;
-
-            const statusElement = selectedContainer.querySelector('.pdf-search-status');
-
-            try {
-                // *** NEW CODE: Call backend API to fetch PDF ***
-                // This is the KEY CHANGE - instead of checking URLs from frontend,
-                // we now call our powerful backend that searches 7+ sources
-                const response = await axios.post(`${API_URL}/api/fetch-pdf`, {
-                    title: paper.title,
-                    doi: paper.doi,
-                    authors: paper.authors,
-                    year: paper.year
-                }, {
-                    timeout: 60000 // 1 minute timeout
-                });
-
-                if (response.data.success) {
-                    // *** NEW CODE: Download the PDF from backend ***
-                    // Backend found the PDF and saved it - now we download it
-                    const pdfResponse = await axios.get(
-                        `${API_URL}/api/download/${response.data.filename}`,
-                        { responseType: 'blob' }
-                    );
-                    
-                    pdfFile = new File(
-                        [pdfResponse.data], 
-                        response.data.filename, 
-                        { type: 'application/pdf' }
-                    );
-                    
-                    statusElement.className = 'pdf-search-status pdf-found';
-                    statusElement.innerHTML = `✅ Found PDF from ${response.data.source}!`;
-                } else {
-                    // *** UPDATED: Better error message when backend can't find PDF ***
-                    // If backend couldn't find it after searching all sources
-                    const googleScholarUrl = `https://scholar.google.com/scholar?q=${encodeURIComponent(paper.title)}`;
-                    const pmcUrl = `https://www.ncbi.nlm.nih.gov/pmc/?term=${encodeURIComponent(paper.title)}`;
-                    
-                    statusElement.className = 'pdf-search-status pdf-not-found';
-                    statusElement.innerHTML = `
-                        ❌ Could not automatically fetch PDF.
-                        <br>Our system searched 7+ databases but couldn't find an accessible version.
-                        <br>Try these links to find it manually:
-                        <br><a href="${googleScholarUrl}" target="_blank" style="color: #667eea;">Google Scholar</a> | 
-                        <a href="${pmcUrl}" target="_blank" style="color: #667eea;">PubMed Central</a>
-                        <br><small>Then use the "Upload PDF" option above.</small>
-                    `;
-                }
-                
-            } catch (error) {
-                console.error('PDF fetch error:', error);
-                
-                // *** UPDATED: Better error handling ***
-                const googleScholarUrl = `https://scholar.google.com/scholar?q=${encodeURIComponent(paper.title)}`;
-                statusElement.className = 'pdf-search-status pdf-not-found';
-                statusElement.innerHTML = `
-                    ❌ Error searching for PDF.
-                    <br>Try searching manually on <a href="${googleScholarUrl}" target="_blank" style="color: #667eea;">Google Scholar</a>
-                    <br><small>Then use the "Upload PDF" option above.</small>
-                `;
-            }
-        }
-        // ==================== END OF UPDATED PDF FETCH CODE ====================
-
-        // Create PDF file from URL (mock for now, but provides structure for backend integration)
-        function createPdfFromUrl(url, title) {
-            // In a real implementation, this would fetch the PDF from the URL
-            // For now, we create a mock file that contains the URL for backend processing
-            const pdfContent = JSON.stringify({ url: url, title: title });
-            const blob = new Blob([pdfContent], { type: 'application/pdf' });
-            pdfFile = new File([blob], `${title.substring(0, 50).replace(/[^a-z0-9]/gi, '_')}.pdf`, { type: 'application/pdf' });
-        }
-
-        // Handle PDF file selection
-        document.getElementById('pdf-file').addEventListener('change', function(e) {
-            pdfFile = e.target.files[0];
-            document.getElementById('pdf-label').textContent = pdfFile ? pdfFile.name : 'Click to select PDF file';
-        });
-
-        // Add experiment function
-        function addExperiment() {
-            experimentCount++;
-            const container = document.getElementById('experiments-container');
-            const newExp = document.createElement('div');
-            newExp.className = 'experiment-item';
-            newExp.setAttribute('data-exp-id', experimentCount);
-            newExp.innerHTML = `
-                <span style="font-weight: 600;">Experiment ${experimentCount}</span>
-                <button class="remove-file" onclick="removeExperiment(${experimentCount})">✕</button>
-                <div class="file-input-wrapper" style="margin-top: 10px;">
-                    <input type="file" id="csv-${experimentCount}" class="file-input csv-input" accept=".csv" data-exp-id="${experimentCount}">
-                    <label for="csv-${experimentCount}" class="file-input-label csv-label" data-exp-id="${experimentCount}">
-                        Click to select CSV file
-                    </label>
-                </div>
-            `;
-            container.appendChild(newExp);
-            
-            // Add event listener for new CSV input
-            document.getElementById(`csv-${experimentCount}`).addEventListener('change', handleCsvChange);
-        }
-
-        // Remove experiment function
-        function removeExperiment(expId) {
-            const element = document.querySelector(`[data-exp-id="${expId}"]`);
-            if (element) {
-                element.remove();
-                delete csvFiles[expId];
-            }
-        }
-
-        // Handle CSV file changes
-        function handleCsvChange(e) {
-            const expId = e.target.getAttribute('data-exp-id');
-            const file = e.target.files[0];
-            if (file) {
-                csvFiles[expId] = file;
-                document.querySelector(`.csv-label[data-exp-id="${expId}"]`).textContent = file.name;
-            }
-        }
-
-        // Add event listeners to initial CSV input
-        document.querySelector('.csv-input').addEventListener('change', handleCsvChange);
-
-        // Show status message
-        function showStatus(type, message) {
-            const container = document.getElementById('status-container');
-            container.innerHTML = `
-                <div class="status-message status-${type}">
-                    ${type === 'info' ? '🔄' : type === 'success' ? '✅' : type === 'warning' ? '⚠️' : '❌'} ${message}
-                </div>
-            `;
-        }
-
-        // Update progress bar
-        function updateProgress(percent) {
-            document.getElementById('progress-container').classList.remove('hidden');
-            document.getElementById('progress-bar').style.width = percent + '%';
-        }
-
-        // Process files function with better error handling
-        async function processFiles() {
-            // Validation
-            if (Object.keys(csvFiles).length === 0) {
-                showStatus('error', 'Please select at least one CSV file');
-                return;
-            }
-
-            // Get the API key
-            const apiKey = getApiKey();
-            if (!apiKey) {
-                showStatus('error', 'API key is required. Please check your settings.');
-                return;
-            }
-
-            // Disable button and show progress
-            const processBtn = document.getElementById('process-btn');
-            processBtn.disabled = true;
-            processBtn.innerHTML = '<span class="loading-spinner"></span> Processing...';
-            updateProgress(0);
-            document.getElementById('results-container').innerHTML = '';
-
-            const allResults = {
-                standardized: [],
-                template: null,
-                readmes: []
+            const addExperiment = () => {
+                setExperiments([...experiments, { id: experiments.length + 1, csvFile: null }]);
             };
 
-            try {
-                // Step 1: Standardize CSVs
-                showStatus('info', 'Step 1/3: Standardizing CSV files...');
-                let csvIndex = 0;
-                const csvEntries = Object.entries(csvFiles);
-                
-                for (const [expId, csvFile] of csvEntries) {
-                    try {
-                        updateProgress(Math.round((csvIndex / csvEntries.length) * 30));
-                        
-                        const formData = new FormData();
-                        formData.append('api_key', apiKey);
-                        formData.append('csv_file', csvFile);
-                        if (pdfFile) {
-                            formData.append('pdf_file', pdfFile);
-                        }
-                        
-                        const response = await axios.post(`${API_URL}/api/standardize`, formData, {
-                            headers: { 'Content-Type': 'multipart/form-data' },
-                            timeout: 120000 // 2 minute timeout
-                        });
-                        
-                        if (response.data.success) {
-                            allResults.standardized.push({
-                                experimentNumber: csvIndex + 1,
-                                originalFile: csvFile.name,
-                                standardizedFile: response.data.standardized_file,
-                                downloadUrl: response.data.download_url,
-                                report: response.data.report
-                            });
-                        } else {
-                            console.error(`Standardization failed for ${csvFile.name}:`, response.data);
-                        }
-                    } catch (error) {
-                        console.error(`Error standardizing ${csvFile.name}:`, error);
-                        // Continue with other files even if one fails
-                        showStatus('warning', `Warning: Could not standardize ${csvFile.name}. Continuing with other files...`);
-                    }
-                    csvIndex++;
+            const updateExperimentFile = (id, file) => {
+                setExperiments(experiments.map(exp => 
+                    exp.id === id ? { ...exp, csvFile: file } : exp
+                ));
+            };
+
+            const removeExperiment = (id) => {
+                if (experiments.length > 1) {
+                    setExperiments(experiments.filter(exp => exp.id !== id));
+                }
+            };
+
+            const handleProcess = async () => {
+                if (!apiKey || experiments.every(exp => !exp.csvFile)) {
+                    setStatus({ type: 'error', message: 'Please provide API key and at least one CSV file' });
+                    return;
                 }
 
-                // Step 2: Fill Template
-                updateProgress(33);
-                showStatus('info', 'Step 2/3: Filling OpenMotor template...');
+                setIsProcessing(true);
+                setProgress(0);
+                setStatus({ type: 'info', message: 'Starting template filling process...' });
+
+                const formData = new FormData();
+                formData.append('api_key', apiKey);
+                if (pdfFile) {
+                    formData.append('pdf_file', pdfFile);
+                }
                 
+                experiments.forEach((exp, index) => {
+                    if (exp.csvFile) {
+                        formData.append(`csv_file_${index}`, exp.csvFile);
+                    }
+                });
+
                 try {
-                    const templateFormData = new FormData();
-                    templateFormData.append('api_key', apiKey);
-                    if (pdfFile) {
-                        templateFormData.append('pdf_file', pdfFile);
-                    }
-                    
-                    let formIndex = 0;
-                    for (const [expId, csvFile] of csvEntries) {
-                        templateFormData.append(`csv_file_${formIndex}`, csvFile);
-                        formIndex++;
-                    }
-                    
-                    const templateResponse = await axios.post(`${API_URL}/api/fill-template`, templateFormData, {
-                        headers: { 'Content-Type': 'multipart/form-data' },
-                        timeout: 120000
+                    const progressInterval = setInterval(() => {
+                        setProgress(prev => Math.min(prev + 5, 90));
+                    }, 500);
+
+                    const response = await axios.post(`${API_URL}/api/fill-template`, formData, {
+                        headers: {
+                            'Content-Type': 'multipart/form-data',
+                        },
                     });
-                    
-                    if (templateResponse.data.success) {
-                        allResults.template = {
-                            outputFile: templateResponse.data.output_file,
-                            experimentsProcessed: templateResponse.data.experiments_processed,
-                            downloadUrl: templateResponse.data.download_url
-                        };
+
+                    clearInterval(progressInterval);
+                    setProgress(100);
+
+                    if (response.data.success) {
+                        setStatus({ type: 'success', message: 'Template filling complete!' });
+                        setResults({
+                            outputFile: response.data.output_file,
+                            experimentsProcessed: response.data.experiments_processed,
+                            downloadUrl: response.data.download_url
+                        });
+                    } else {
+                        setStatus({ type: 'error', message: 'Template filling failed' });
                     }
                 } catch (error) {
-                    console.error('Template filling error:', error);
-                    showStatus('warning', 'Warning: Could not fill template. Continuing with other tasks...');
+                    clearInterval(progressInterval);
+                    setStatus({ 
+                        type: 'error', 
+                        message: error.response?.data?.error || 'Error processing files'
+                    });
+                    console.error('Error:', error);
+                } finally {
+                    setIsProcessing(false);
                 }
+            };
 
-                // Step 3: Generate READMEs (only if PDF is provided)
-                if (pdfFile) {
-                    updateProgress(66);
-                    showStatus('info', 'Step 3/3: Generating README files...');
+            const handleDownload = async (url, filename) => {
+                try {
+                    const response = await axios.get(`${API_URL}${url}`, {
+                        responseType: 'blob'
+                    });
                     
-                    for (let i = 0; i < csvEntries.length; i++) {
-                        try {
-                            updateProgress(66 + Math.round((i / csvEntries.length) * 34));
-                            
-                            const readmeFormData = new FormData();
-                            readmeFormData.append('api_key', apiKey);
-                            readmeFormData.append('pdf_file', pdfFile);
-                            readmeFormData.append('experiment_number', i + 1);
-                            
-                            const readmeResponse = await axios.post(`${API_URL}/api/generate-readme`, readmeFormData, {
-                                headers: { 'Content-Type': 'multipart/form-data' },
-                                timeout: 120000
-                            });
-                            
-                            if (readmeResponse.data.success) {
-                                allResults.readmes.push({
-                                    experimentNumber: i + 1,
-                                    filename: readmeResponse.data.filename,
-                                    downloadUrl: readmeResponse.data.download_url
-                                });
-                            }
-                        } catch (error) {
-                            console.error(`README generation failed for Experiment ${i + 1}:`, error);
-                            // Continue with other READMEs
-                        }
-                    }
-                } else {
-                    updateProgress(100);
-                    showStatus('info', 'Skipping README generation (no PDF provided)');
+                    const blob = new Blob([response.data]);
+                    const downloadUrl = window.URL.createObjectURL(blob);
+                    const link = document.createElement('a');
+                    link.href = downloadUrl;
+                    link.download = filename;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    window.URL.revokeObjectURL(downloadUrl);
+                } catch (error) {
+                    console.error('Download error:', error);
+                    setStatus({ type: 'error', message: 'Error downloading file' });
                 }
+            };
 
-                updateProgress(100);
-                
-                // Check if we have any results
-                if (allResults.standardized.length === 0 && !allResults.template && allResults.readmes.length === 0) {
-                    showStatus('error', 'No files were successfully processed. Please check your inputs and try again.');
-                } else {
-                    showStatus('success', 'Processing complete! Your files are ready for download.');
-                    displayResults(allResults);
-                }
+            return (
+                <div>
+                    <div className="api-key-warning">
+                        ⚠️ This tool uses Claude AI to intelligently extract information from research papers and data.
+                    </div>
 
-            } catch (error) {
-                console.error('Processing error:', error);
-                
-                // Better error messages
-                if (error.response?.status === 401) {
-                    showStatus('error', 'Authentication error: Invalid API key. Please check your Anthropic API key.');
-                } else if (error.response?.data?.error) {
-                    showStatus('error', `Error: ${error.response.data.error}`);
-                } else if (error.message) {
-                    showStatus('error', `Error: ${error.message}`);
-                } else {
-                    showStatus('error', 'An unexpected error occurred. Please try again.');
-                }
-            } finally {
-                processBtn.disabled = false;
-                processBtn.innerHTML = '🚀 Process All Files';
-            }
-        }
+                    <div className="form-group">
+                        <label className="form-label">Anthropic API Key</label>
+                        <input
+                            type="password"
+                            className="form-input"
+                            placeholder="sk-ant-api03-..."
+                            value={apiKey}
+                            onChange={(e) => setApiKey(e.target.value)}
+                        />
+                    </div>
 
-        // Display results
-        function displayResults(results) {
-            let html = '<div class="results-section"><h3 class="results-title">🎉 Processing Complete!</h3>';
-            
-            // Show what was successful
-            const successCount = results.standardized.length + 
-                               (results.template ? 1 : 0) + 
-                               results.readmes.length;
-            
-            if (successCount > 0) {
-                html += `<p style="color: #22543d; margin-bottom: 20px;">Successfully processed ${successCount} items</p>`;
-            }
-
-            // Download all button (only if there are results)
-            if (successCount > 0) {
-                html += `<div style="margin-bottom: 20px;">
-                    <button class="btn btn-primary" onclick='downloadAll(${JSON.stringify(results)})'>
-                        📥 Download All Files
-                    </button>
-                </div>`;
-            }
-
-            // Standardized CSVs
-            if (results.standardized.length > 0) {
-                html += '<div class="result-item"><div class="result-label">📊 Standardized CSV Files</div>';
-                results.standardized.forEach(item => {
-                    html += `
-                        <div style="margin-top: 10px;">
-                            <div class="result-value">Experiment ${item.experimentNumber}: ${escapeHtml(item.originalFile)}</div>
-                            <button class="btn btn-secondary" onclick="downloadFile('${item.downloadUrl}', '${item.standardizedFile}')">
-                                📥 Download Standardized CSV
-                            </button>
+                    <div className="form-group">
+                        <label className="form-label">Research Paper PDF (Optional but recommended)</label>
+                        <div className="file-input-wrapper">
+                            <input
+                                type="file"
+                                id="pdf-template"
+                                className="file-input"
+                                accept=".pdf"
+                                onChange={(e) => setPdfFile(e.target.files[0])}
+                            />
+                            <label htmlFor="pdf-template" className="file-input-label">
+                                {pdfFile ? pdfFile.name : 'Click to select PDF'}
+                            </label>
                         </div>
-                    `;
-                });
-                html += '</div>';
-            }
+                    </div>
 
-            // Template
-            if (results.template) {
-                html += `
-                    <div class="result-item">
-                        <div class="result-label">📝 OpenMotor Description Template</div>
-                        <div class="result-value">Processed ${results.template.experimentsProcessed} experiments</div>
-                        <button class="btn btn-secondary" onclick="downloadFile('${results.template.downloadUrl}', '${results.template.outputFile}')">
-                            📥 Download Template (Excel)
+                    <div className="form-group">
+                        <label className="form-label">Experiment CSV Files</label>
+                        <div className="experiment-inputs">
+                            {experiments.map((exp, index) => (
+                                <div key={exp.id} className="experiment-item">
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                        <span style={{ fontWeight: 600 }}>Experiment {index + 1}</span>
+                                        {experiments.length > 1 && (
+                                            <button 
+                                                className="remove-file"
+                                                onClick={() => removeExperiment(exp.id)}
+                                            >
+                                                ✕
+                                            </button>
+                                        )}
+                                    </div>
+                                    <div className="file-input-wrapper" style={{ marginTop: '10px' }}>
+                                        <input
+                                            type="file"
+                                            id={`csv-exp-${exp.id}`}
+                                            className="file-input"
+                                            accept=".csv"
+                                            onChange={(e) => updateExperimentFile(exp.id, e.target.files[0])}
+                                        />
+                                        <label htmlFor={`csv-exp-${exp.id}`} className="file-input-label">
+                                            {exp.csvFile ? exp.csvFile.name : 'Click to select CSV file'}
+                                        </label>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                        <button className="add-experiment-btn" onClick={addExperiment}>
+                            + Add Another Experiment
                         </button>
                     </div>
-                `;
-            }
 
-            // READMEs
-            if (results.readmes.length > 0) {
-                html += '<div class="result-item"><div class="result-label">📄 README Files</div>';
-                results.readmes.forEach(readme => {
-                    html += `
-                        <div style="margin-top: 10px;">
-                            <div class="result-value">Experiment ${readme.experimentNumber} README</div>
-                            <button class="btn btn-secondary" onclick="downloadFile('${readme.downloadUrl}', '${readme.filename}')">
-                                📥 Download ${escapeHtml(readme.filename)}
-                            </button>
+                    <button 
+                        className="btn btn-primary"
+                        onClick={handleProcess}
+                        disabled={isProcessing || !apiKey || experiments.every(exp => !exp.csvFile)}
+                    >
+                        {isProcessing ? (
+                            <>
+                                <span className="loading-spinner"></span>
+                                Processing...
+                            </>
+                        ) : (
+                            <>📝 Fill Template</>
+                        )}
+                    </button>
+
+                    {isProcessing && (
+                        <div className="progress-bar">
+                            <div className="progress-fill" style={{ width: `${progress}%` }}></div>
                         </div>
-                    `;
-                });
-                html += '</div>';
-            }
+                    )}
 
-            html += '</div>';
-            document.getElementById('results-container').innerHTML = html;
-        }
+                    {status && (
+                        <div className={`status-message status-${status.type}`}>
+                            {status.type === 'info' && '🔄'}
+                            {status.type === 'success' && '✅'}
+                            {status.type === 'error' && '❌'}
+                            {status.message}
+                        </div>
+                    )}
 
-        // Download single file with better error handling
-        async function downloadFile(url, filename) {
-            try {
-                showStatus('info', `Downloading ${filename}...`);
-                const response = await axios.get(`${API_URL}${url}`, { 
-                    responseType: 'blob',
-                    timeout: 60000 // 1 minute timeout
-                });
-                
-                const blob = new Blob([response.data]);
-                const downloadUrl = window.URL.createObjectURL(blob);
-                const link = document.createElement('a');
-                link.href = downloadUrl;
-                link.download = filename;
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-                window.URL.revokeObjectURL(downloadUrl);
-                
-                showStatus('success', `Downloaded ${filename}`);
-            } catch (error) {
-                console.error('Download error:', error);
-                showStatus('error', `Error downloading ${filename}. Please try again.`);
-            }
-        }
+                    {results && (
+                        <div className="results-section">
+                            <h3 className="results-title">Template Filling Results</h3>
+                            <div className="result-item">
+                                <div className="result-label">Experiments Processed</div>
+                                <div className="result-value">{results.experimentsProcessed} experiments</div>
+                            </div>
+                            <div className="result-item">
+                                <div className="result-label">Output File</div>
+                                <button 
+                                    className="btn btn-secondary download-btn"
+                                    onClick={() => handleDownload(results.downloadUrl, results.outputFile)}
+                                >
+                                    📥 Download {results.outputFile}
+                                </button>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
+        };
 
-        // Download all files
-        async function downloadAll(results) {
-            showStatus('info', 'Starting batch download...');
-            let downloadCount = 0;
-            let totalFiles = results.standardized.length + 
-                           (results.template ? 1 : 0) + 
-                           results.readmes.length;
+        const ReadmeGenerator = ({ apiKey, setApiKey, isProcessing, setIsProcessing, status, setStatus, results, setResults }) => {
+            const [pdfFile, setPdfFile] = useState(null);
+            const [experimentNumber, setExperimentNumber] = useState('1');
+            const [progress, setProgress] = useState(0);
+            const [readmePreview, setReadmePreview] = useState('');
 
-            for (const item of results.standardized) {
-                await downloadFile(item.downloadUrl, item.standardizedFile);
-                await new Promise(resolve => setTimeout(resolve, 500));
-                downloadCount++;
-                showStatus('info', `Downloaded ${downloadCount} of ${totalFiles} files...`);
-            }
-            
-            if (results.template) {
-                await downloadFile(results.template.downloadUrl, results.template.outputFile);
-                await new Promise(resolve => setTimeout(resolve, 500));
-                downloadCount++;
-                showStatus('info', `Downloaded ${downloadCount} of ${totalFiles} files...`);
-            }
-            
-            for (const readme of results.readmes) {
-                await downloadFile(readme.downloadUrl, readme.filename);
-                await new Promise(resolve => setTimeout(resolve, 500));
-                downloadCount++;
-                showStatus('info', `Downloaded ${downloadCount} of ${totalFiles} files...`);
-            }
+            const handleProcess = async () => {
+                if (!apiKey || !pdfFile) {
+                    setStatus({ type: 'error', message: 'Please provide API key and PDF file' });
+                    return;
+                }
 
-            showStatus('success', `All ${totalFiles} files downloaded successfully!`);
-        }
+                setIsProcessing(true);
+                setProgress(0);
+                setStatus({ type: 'info', message: 'Reading PDF content...' });
 
-        // Initialize - clean up any stale state
-        window.addEventListener('load', function() {
-            // Clear any previous state
-            document.getElementById('progress-container').classList.add('hidden');
-            document.getElementById('status-container').innerHTML = '';
-            document.getElementById('results-container').innerHTML = '';
-        });
+                const formData = new FormData();
+                formData.append('api_key', apiKey);
+                formData.append('pdf_file', pdfFile);
+                formData.append('experiment_number', experimentNumber);
+
+                try {
+                    const progressInterval = setInterval(() => {
+                        setProgress(prev => Math.min(prev + 10, 90));
+                    }, 300);
+
+                    const response = await axios.post(`${API_URL}/api/generate-readme`, formData, {
+                        headers: {
+                            'Content-Type': 'multipart/form-data',
+                        },
+                    });
+
+                    clearInterval(progressInterval);
+                    setProgress(100);
+
+                    if (response.data.success) {
+                        setStatus({ type: 'success', message: 'README generated successfully!' });
+                        setReadmePreview(response.data.content_preview);
+                        setResults({
+                            filename: response.data.filename,
+                            experimentNumber: response.data.experiment_number,
+                            downloadUrl: response.data.download_url
+                        });
+                    } else {
+                        setStatus({ type: 'error', message: 'README generation failed' });
+                    }
+                } catch (error) {
+                    clearInterval(progressInterval);
+                    if (error.response?.status === 404) {
+                        setStatus({ 
+                            type: 'error', 
+                            message: `Experiment ${experimentNumber} not found in the paper. Try a different experiment number.`
+                        });
+                    } else {
+                        setStatus({ 
+                            type: 'error', 
+                            message: error.response?.data?.error || 'Error generating README'
+                        });
+                    }
+                    console.error('Error:', error);
+                } finally {
+                    setIsProcessing(false);
+                }
+            };
+
+            const handleDownload = async (url, filename) => {
+                try {
+                    const response = await axios.get(`${API_URL}${url}`, {
+                        responseType: 'blob'
+                    });
+                    
+                    const blob = new Blob([response.data]);
+                    const downloadUrl = window.URL.createObjectURL(blob);
+                    const link = document.createElement('a');
+                    link.href = downloadUrl;
+                    link.download = filename;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    window.URL.revokeObjectURL(downloadUrl);
+                } catch (error) {
+                    console.error('Download error:', error);
+                    setStatus({ type: 'error', message: 'Error downloading file' });
+                }
+            };
+
+            return (
+                <div>
+                    <div className="api-key-warning">
+                        ⚠️ This tool uses Claude AI to extract experiment information and generate comprehensive README files.
+                    </div>
+
+                    <div className="form-group">
+                        <label className="form-label">Anthropic API Key</label>
+                        <input
+                            type="password"
+                            className="form-input"
+                            placeholder="sk-ant-api03-..."
+                            value={apiKey}
+                            onChange={(e) => setApiKey(e.target.value)}
+                        />
+                    </div>
+
+                    <div className="form-group">
+                        <label className="form-label">Research Paper PDF *</label>
+                        <div className="file-input-wrapper">
+                            <input
+                                type="file"
+                                id="pdf-readme"
+                                className="file-input"
+                                accept=".pdf"
+                                onChange={(e) => setPdfFile(e.target.files[0])}
+                            />
+                            <label htmlFor="pdf-readme" className="file-input-label">
+                                {pdfFile ? pdfFile.name : 'Click to select PDF file'}
+                            </label>
+                        </div>
+                    </div>
+
+                    <div className="form-group">
+                        <label className="form-label">Experiment Number</label>
+                        <input
+                            type="number"
+                            className="form-input"
+                            min="1"
+                            value={experimentNumber}
+                            onChange={(e) => setExperimentNumber(e.target.value)}
+                            placeholder="Enter experiment number (e.g., 1, 2, 3)"
+                        />
+                    </div>
+
+                    <button 
+                        className="btn btn-primary"
+                        onClick={handleProcess}
+                        disabled={isProcessing || !apiKey || !pdfFile}
+                    >
+                        {isProcessing ? (
+                            <>
+                                <span className="loading-spinner"></span>
+                                Processing...
+                            </>
+                        ) : (
+                            <>📄 Generate README</>
+                        )}
+                    </button>
+
+                    {isProcessing && (
+                        <div className="progress-bar">
+                            <div className="progress-fill" style={{ width: `${progress}%` }}></div>
+                        </div>
+                    )}
+
+                    {status && (
+                        <div className={`status-message status-${status.type}`}>
+                            {status.type === 'info' && '🔄'}
+                            {status.type === 'success' && '✅'}
+                            {status.type === 'error' && '❌'}
+                            {status.message}
+                        </div>
+                    )}
+
+                    {results && (
+                        <>
+                            <div className="results-section">
+                                <h3 className="results-title">README Generation Results</h3>
+                                <div className="result-item">
+                                    <div className="result-label">Experiment</div>
+                                    <div className="result-value">Experiment {results.experimentNumber}</div>
+                                </div>
+                                <div className="result-item">
+                                    <div className="result-label">Output File</div>
+                                    <button 
+                                        className="btn btn-secondary download-btn"
+                                        onClick={() => handleDownload(results.downloadUrl, results.filename)}
+                                    >
+                                        📥 Download {results.filename}
+                                    </button>
+                                </div>
+                            </div>
+
+                            {readmePreview && (
+                                <div className="preview-section">
+                                    <h3 className="results-title">README Preview</h3>
+                                    <div className="preview-content">{readmePreview}</div>
+                                </div>
+                            )}
+                        </>
+                    )}
+                </div>
+            );
+        };
+
+        ReactDOM.render(<App />, document.getElementById('root'));
     </script>
 </body>
 </html>
