@@ -35,6 +35,11 @@ import hashlib
 from dataclasses import dataclass
 from difflib import SequenceMatcher
 from openpyxl import Workbook
+import requests
+from bs4 import BeautifulSoup
+import re
+from urllib.parse import urljoin, quote
+import time
 
 # just important the core functionality from modules
 
@@ -837,6 +842,329 @@ def cleanup_files():
         })
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+@app.route('/api/fetch-pdf', methods=['POST'])
+def fetch_pdf():
+    """Fetch PDF from multiple sources"""
+    try:
+        data = request.json
+        title = data.get('title', '')
+        doi = data.get('doi', '')
+        authors = data.get('authors', '')
+        year = data.get('year', '')
+        
+        logger.info(f"Searching for PDF: {title}")
+        
+        # Try multiple methods to find the PDF
+        pdf_url = None
+        source = None
+        
+        # 1. Try Google Scholar first
+        if not pdf_url:
+            logger.info("Trying Google Scholar...")
+            pdf_url = search_google_scholar(title)
+            if pdf_url:
+                source = "Google Scholar"
+        
+        # 2. Try Sci-Hub (multiple mirrors)
+        if not pdf_url and doi:
+            logger.info("Trying Sci-Hub...")
+            pdf_url = try_scihub(doi)
+            if pdf_url:
+                source = "Sci-Hub"
+        
+        # 3. Try PubMed Central
+        if not pdf_url:
+            logger.info("Trying PubMed Central...")
+            pdf_url = search_pmc(title)
+            if pdf_url:
+                source = "PubMed Central"
+        
+        # 4. Try arXiv
+        if not pdf_url:
+            logger.info("Trying arXiv...")
+            pdf_url = search_arxiv(title)
+            if pdf_url:
+                source = "arXiv"
+        
+        # 5. Try bioRxiv/medRxiv
+        if not pdf_url:
+            logger.info("Trying bioRxiv...")
+            pdf_url = search_biorxiv(title)
+            if pdf_url:
+                source = "bioRxiv"
+        
+        # 6. Try CORE
+        if not pdf_url:
+            logger.info("Trying CORE...")
+            pdf_url = search_core(title)
+            if pdf_url:
+                source = "CORE"
+        
+        # 7. Try ResearchGate
+        if not pdf_url:
+            logger.info("Trying ResearchGate...")
+            pdf_url = search_researchgate(title)
+            if pdf_url:
+                source = "ResearchGate"
+        
+        if pdf_url:
+            # Download the PDF
+            logger.info(f"Found PDF at {pdf_url} from {source}")
+            pdf_content = download_pdf(pdf_url)
+            
+            if pdf_content:
+                # Save temporarily
+                filename = f"{title[:50].replace(' ', '_').replace('/', '_')}.pdf"
+                filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+                
+                with open(filepath, 'wb') as f:
+                    f.write(pdf_content)
+                
+                return jsonify({
+                    'success': True,
+                    'filename': filename,
+                    'source': source,
+                    'size': len(pdf_content)
+                })
+        
+        return jsonify({
+            'success': False,
+            'error': 'Could not find PDF'
+        })
+        
+    except Exception as e:
+        logger.error(f"Error fetching PDF: {str(e)}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+def search_google_scholar(title):
+    """Search Google Scholar for PDF"""
+    try:
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+        }
+        
+        # Search Google Scholar
+        search_url = f"https://scholar.google.com/scholar?q={quote(title)}"
+        response = requests.get(search_url, headers=headers, timeout=10)
+        
+        if response.status_code == 200:
+            soup = BeautifulSoup(response.text, 'html.parser')
+            
+            # Look for PDF links
+            for link in soup.find_all('a'):
+                href = link.get('href', '')
+                if '[PDF]' in link.text or href.endswith('.pdf'):
+                    if href.startswith('http'):
+                        return href
+                    elif href.startswith('/'):
+                        return f"https://scholar.google.com{href}"
+            
+            # Check for direct PDF links in the results
+            for div in soup.find_all('div', class_='gs_or_ggsm'):
+                link = div.find('a')
+                if link and link.get('href'):
+                    return link['href']
+                    
+    except Exception as e:
+        logger.error(f"Google Scholar search error: {e}")
+    
+    return None
+
+def try_scihub(doi):
+    """Try to get PDF from Sci-Hub mirrors"""
+    mirrors = [
+        'https://sci-hub.se/',
+        'https://sci-hub.st/',
+        'https://sci-hub.ru/',
+        'https://sci-hub.cat/',
+        'https://sci-hub.tw/'
+    ]
+    
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+    }
+    
+    for mirror in mirrors:
+        try:
+            url = mirror + doi
+            response = requests.get(url, headers=headers, timeout=10)
+            
+            if response.status_code == 200:
+                soup = BeautifulSoup(response.text, 'html.parser')
+                
+                # Look for PDF embed or iframe
+                pdf_elem = soup.find('embed', {'type': 'application/pdf'}) or \
+                          soup.find('iframe', {'id': 'pdf'})
+                
+                if pdf_elem and pdf_elem.get('src'):
+                    pdf_url = pdf_elem['src']
+                    if pdf_url.startswith('//'):
+                        pdf_url = 'https:' + pdf_url
+                    elif pdf_url.startswith('/'):
+                        pdf_url = mirror + pdf_url[1:]
+                    return pdf_url
+                    
+        except Exception as e:
+            continue
+    
+    return None
+
+def search_pmc(title):
+    """Search PubMed Central for PDF"""
+    try:
+        headers = {'User-Agent': 'Mozilla/5.0'}
+        
+        # Search PMC
+        search_url = f"https://www.ncbi.nlm.nih.gov/pmc/?term={quote(title)}"
+        response = requests.get(search_url, headers=headers, timeout=10)
+        
+        if response.status_code == 200:
+            soup = BeautifulSoup(response.text, 'html.parser')
+            
+            # Find first result
+            first_result = soup.find('div', class_='rslt')
+            if first_result:
+                # Get PMC ID
+                pmc_link = first_result.find('a', class_='view')
+                if pmc_link and 'PMC' in pmc_link.text:
+                    pmc_id = re.search(r'PMC\d+', pmc_link.text)
+                    if pmc_id:
+                        # Direct PDF link
+                        pdf_url = f"https://www.ncbi.nlm.nih.gov/pmc/articles/{pmc_id.group()}/pdf/"
+                        return pdf_url
+                        
+    except Exception as e:
+        logger.error(f"PMC search error: {e}")
+    
+    return None
+
+def search_arxiv(title):
+    """Search arXiv for PDF"""
+    try:
+        import urllib.parse
+        
+        # Use arXiv API
+        query = urllib.parse.quote(title)
+        api_url = f"http://export.arxiv.org/api/query?search_query=ti:{query}&max_results=1"
+        
+        response = requests.get(api_url, timeout=10)
+        if response.status_code == 200:
+            # Parse XML response
+            import xml.etree.ElementTree as ET
+            root = ET.fromstring(response.text)
+            
+            # Find PDF link
+            for entry in root.findall('{http://www.w3.org/2005/Atom}entry'):
+                for link in entry.findall('{http://www.w3.org/2005/Atom}link'):
+                    if link.get('title') == 'pdf':
+                        return link.get('href')
+                        
+    except Exception as e:
+        logger.error(f"arXiv search error: {e}")
+    
+    return None
+
+def search_biorxiv(title):
+    """Search bioRxiv for PDF"""
+    try:
+        headers = {'User-Agent': 'Mozilla/5.0'}
+        
+        # Search bioRxiv
+        search_url = f"https://www.biorxiv.org/search/{quote(title)}"
+        response = requests.get(search_url, headers=headers, timeout=10)
+        
+        if response.status_code == 200:
+            soup = BeautifulSoup(response.text, 'html.parser')
+            
+            # Find first result
+            result = soup.find('a', class_='highwire-cite-linked-title')
+            if result:
+                article_url = 'https://www.biorxiv.org' + result['href']
+                # Convert to PDF URL
+                pdf_url = article_url + '.full.pdf'
+                return pdf_url
+                
+    except Exception as e:
+        logger.error(f"bioRxiv search error: {e}")
+    
+    return None
+
+def search_core(title):
+    """Search CORE for PDF"""
+    try:
+        # CORE API (no key needed for basic search)
+        api_url = f"https://api.core.ac.uk/v3/search/works?q={quote(title)}&limit=1"
+        
+        response = requests.get(api_url, timeout=10)
+        if response.status_code == 200:
+            data = response.json()
+            if data.get('results') and len(data['results']) > 0:
+                result = data['results'][0]
+                if result.get('downloadUrl'):
+                    return result['downloadUrl']
+                    
+    except Exception as e:
+        logger.error(f"CORE search error: {e}")
+    
+    return None
+
+def search_researchgate(title):
+    """Search ResearchGate for PDF"""
+    try:
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+        }
+        
+        search_url = f"https://www.researchgate.net/search/publication?q={quote(title)}"
+        response = requests.get(search_url, headers=headers, timeout=10)
+        
+        if response.status_code == 200:
+            # Look for PDF download links in the HTML
+            if 'rgcdn.net' in response.text and '.pdf' in response.text:
+                # Extract PDF URL using regex
+                pdf_pattern = r'(https://.*?rgcdn\.net/.*?\.pdf)'
+                match = re.search(pdf_pattern, response.text)
+                if match:
+                    return match.group(1)
+                    
+    except Exception as e:
+        logger.error(f"ResearchGate search error: {e}")
+    
+    return None
+
+def download_pdf(url):
+    """Download PDF from URL"""
+    try:
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+        }
+        
+        response = requests.get(url, headers=headers, timeout=30, stream=True)
+        
+        if response.status_code == 200:
+            # Check if it's actually a PDF
+            content_type = response.headers.get('content-type', '')
+            if 'pdf' in content_type or url.endswith('.pdf'):
+                return response.content
+            
+            # Sometimes PDFs are served without proper content-type
+            # Check first few bytes for PDF signature
+            first_bytes = response.content[:5]
+            if first_bytes == b'%PDF-':
+                return response.content
+                
+    except Exception as e:
+        logger.error(f"PDF download error: {e}")
+    
+    return None
+
+# Also add BeautifulSoup to requirements
+# pip install beautifulsoup4
+
 
 if __name__ == '__main__':
     os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
