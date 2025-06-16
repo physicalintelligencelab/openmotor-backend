@@ -675,7 +675,9 @@
             return div.innerHTML;
         }
 
-        // Enhanced PDF search across multiple sources
+        // ==================== START OF UPDATED PDF FETCH CODE ====================
+        // THIS IS THE MAIN CHANGE - Now uses backend API instead of frontend-only checks
+        // Enhanced PDF search using backend
         async function selectPaper(index, paper) {
             selectedPaper = paper;
             
@@ -689,144 +691,53 @@
                 <div class="selected-paper">
                     <strong>Selected:</strong> ${escapeHtml(paper.title)}
                     <div class="pdf-search-status">
-                        <span class="loading-spinner"></span> Searching for PDF across multiple sources...
+                        <span class="loading-spinner"></span> Searching for PDF across all sources...
                     </div>
                 </div>
             `;
 
-            let pdfFound = false;
             const statusElement = selectedContainer.querySelector('.pdf-search-status');
 
             try {
-                // Try multiple sources in order
-                
-                // 1. Check if DOI points to PMC
-                if (paper.doi && !pdfFound) {
-                    statusElement.innerHTML = '<span class="loading-spinner"></span> Checking PubMed Central...';
-                    
-                    // Check if it's a PMC paper
-                    if (paper.doi.includes('pmc') || paper.journal.toLowerCase().includes('plos')) {
-                        const pmcId = paper.doi.match(/pmc(\d+)/i)?.[1];
-                        if (pmcId) {
-                            pdfFound = true;
-                            createPdfFromUrl(`https://www.ncbi.nlm.nih.gov/pmc/articles/PMC${pmcId}/pdf/`, paper.title);
-                            statusElement.className = 'pdf-search-status pdf-found';
-                            statusElement.innerHTML = '✅ Found PDF on PubMed Central!';
-                        }
-                    }
-                }
+                // *** NEW CODE: Call backend API to fetch PDF ***
+                // This is the KEY CHANGE - instead of checking URLs from frontend,
+                // we now call our powerful backend that searches 7+ sources
+                const response = await axios.post(`${API_URL}/api/fetch-pdf`, {
+                    title: paper.title,
+                    doi: paper.doi,
+                    authors: paper.authors,
+                    year: paper.year
+                }, {
+                    timeout: 60000 // 1 minute timeout
+                });
 
-                // 2. Try arXiv
-                if (!pdfFound && (paper.doi?.includes('arXiv') || paper.title.toLowerCase().includes('arxiv'))) {
-                    statusElement.innerHTML = '<span class="loading-spinner"></span> Checking arXiv...';
+                if (response.data.success) {
+                    // *** NEW CODE: Download the PDF from backend ***
+                    // Backend found the PDF and saved it - now we download it
+                    const pdfResponse = await axios.get(
+                        `${API_URL}/api/download/${response.data.filename}`,
+                        { responseType: 'blob' }
+                    );
                     
-                    let arxivId = paper.doi?.match(/(\d{4}\.\d{4,5})/)?.[1];
-                    if (!arxivId && paper.url) {
-                        arxivId = paper.url.match(/(\d{4}\.\d{4,5})/)?.[1];
-                    }
+                    pdfFile = new File(
+                        [pdfResponse.data], 
+                        response.data.filename, 
+                        { type: 'application/pdf' }
+                    );
                     
-                    if (arxivId) {
-                        pdfFound = true;
-                        createPdfFromUrl(`https://arxiv.org/pdf/${arxivId}.pdf`, paper.title);
-                        statusElement.className = 'pdf-search-status pdf-found';
-                        statusElement.innerHTML = '✅ Found PDF on arXiv!';
-                    }
-                }
-
-                // 3. Try bioRxiv/medRxiv
-                if (!pdfFound && (paper.doi?.includes('biorxiv') || paper.doi?.includes('medrxiv'))) {
-                    statusElement.innerHTML = '<span class="loading-spinner"></span> Checking bioRxiv/medRxiv...';
-                    
-                    const server = paper.doi.includes('medrxiv') ? 'medrxiv' : 'biorxiv';
-                    const doiPart = paper.doi.split('/').slice(-2).join('/');
-                    
-                    pdfFound = true;
-                    createPdfFromUrl(`https://www.${server}.org/content/${doiPart}.full.pdf`, paper.title);
                     statusElement.className = 'pdf-search-status pdf-found';
-                    statusElement.innerHTML = `✅ Found PDF on ${server}!`;
-                }
-
-                // 4. Try Unpaywall for open access
-                if (!pdfFound && paper.doi) {
-                    statusElement.innerHTML = '<span class="loading-spinner"></span> Checking Unpaywall for open access...';
-                    
-                    try {
-                        const unpywallResponse = await fetch(
-                            `https://api.unpaywall.org/v2/${paper.doi}?email=user@example.com`
-                        );
-
-                        if (unpywallResponse.ok) {
-                            const data = await unpywallResponse.json();
-                            if (data.is_oa && data.best_oa_location?.url_for_pdf) {
-                                pdfFound = true;
-                                createPdfFromUrl(data.best_oa_location.url_for_pdf, paper.title);
-                                statusElement.className = 'pdf-search-status pdf-found';
-                                statusElement.innerHTML = '✅ Found open access PDF via Unpaywall!';
-                            }
-                        }
-                    } catch (e) {
-                        console.log('Unpaywall check failed:', e);
-                    }
-                }
-
-                // 5. Try CORE API
-                if (!pdfFound && paper.title) {
-                    statusElement.innerHTML = '<span class="loading-spinner"></span> Checking CORE database...';
-                    
-                    try {
-                        const coreResponse = await fetch(
-                            `https://api.core.ac.uk/v3/search/works?q=${encodeURIComponent(paper.title)}&limit=1`
-                        );
-                        
-                        if (coreResponse.ok) {
-                            const coreData = await coreResponse.json();
-                            if (coreData.results?.[0]?.downloadUrl) {
-                                pdfFound = true;
-                                createPdfFromUrl(coreData.results[0].downloadUrl, paper.title);
-                                statusElement.className = 'pdf-search-status pdf-found';
-                                statusElement.innerHTML = '✅ Found PDF via CORE!';
-                            }
-                        }
-                    } catch (e) {
-                        console.log('CORE check failed:', e);
-                    }
-                }
-
-                // 6. Try Google Scholar workaround (using title search)
-                if (!pdfFound) {
-                    statusElement.innerHTML = '<span class="loading-spinner"></span> Searching alternative sources...';
-                    
-                    // For cerebellar papers, check specific known repositories
-                    if (paper.title.toLowerCase().includes('cerebellar') || 
-                        paper.title.toLowerCase().includes('cerebellum')) {
-                        // Many cerebellar papers are on PMC
-                        const searchUrl = `https://www.ncbi.nlm.nih.gov/pmc/?term=${encodeURIComponent(paper.title)}`;
-                        statusElement.className = 'pdf-search-status pdf-not-found';
-                        statusElement.innerHTML = `
-                            ❌ Could not automatically fetch PDF. 
-                            <br>Try searching manually: 
-                            <a href="${searchUrl}" target="_blank" style="color: #667eea;">Search PMC</a>
-                            <br><small>Or use the "Upload PDF" option above.</small>
-                        `;
-                    } else {
-                        statusElement.className = 'pdf-search-status pdf-not-found';
-                        statusElement.innerHTML = `
-                            ❌ Could not find open access PDF.
-                            <br><small>Please use the "Upload PDF" option above to manually upload the paper.</small>
-                        `;
-                    }
-                }
-
-                // If no PDF found after all attempts
-                if (!pdfFound) {
-                    // Provide manual search links
+                    statusElement.innerHTML = `✅ Found PDF from ${response.data.source}!`;
+                } else {
+                    // *** UPDATED: Better error message when backend can't find PDF ***
+                    // If backend couldn't find it after searching all sources
                     const googleScholarUrl = `https://scholar.google.com/scholar?q=${encodeURIComponent(paper.title)}`;
                     const pmcUrl = `https://www.ncbi.nlm.nih.gov/pmc/?term=${encodeURIComponent(paper.title)}`;
                     
                     statusElement.className = 'pdf-search-status pdf-not-found';
                     statusElement.innerHTML = `
                         ❌ Could not automatically fetch PDF.
-                        <br>Try searching manually:
+                        <br>Our system searched 7+ databases but couldn't find an accessible version.
+                        <br>Try these links to find it manually:
                         <br><a href="${googleScholarUrl}" target="_blank" style="color: #667eea;">Google Scholar</a> | 
                         <a href="${pmcUrl}" target="_blank" style="color: #667eea;">PubMed Central</a>
                         <br><small>Then use the "Upload PDF" option above.</small>
@@ -834,14 +745,19 @@
                 }
                 
             } catch (error) {
-                console.error('PDF search error:', error);
+                console.error('PDF fetch error:', error);
+                
+                // *** UPDATED: Better error handling ***
+                const googleScholarUrl = `https://scholar.google.com/scholar?q=${encodeURIComponent(paper.title)}`;
                 statusElement.className = 'pdf-search-status pdf-not-found';
                 statusElement.innerHTML = `
                     ❌ Error searching for PDF.
-                    <br><small>Please use the "Upload PDF" option above to manually upload the paper.</small>
+                    <br>Try searching manually on <a href="${googleScholarUrl}" target="_blank" style="color: #667eea;">Google Scholar</a>
+                    <br><small>Then use the "Upload PDF" option above.</small>
                 `;
             }
         }
+        // ==================== END OF UPDATED PDF FETCH CODE ====================
 
         // Create PDF file from URL (mock for now, but provides structure for backend integration)
         function createPdfFromUrl(url, title) {
