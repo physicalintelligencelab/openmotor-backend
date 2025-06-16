@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>OpenMotor Research Tools Suite - Unified</title>
+    <title>OpenMotor Research Tools Suite</title>
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
@@ -48,56 +48,89 @@
             opacity: 0.9;
         }
 
-        .main-card {
+        .tools-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+
+        .tool-card {
             background: white;
             border-radius: 12px;
-            padding: 40px;
+            padding: 30px;
             box-shadow: 0 2px 10px rgba(0,0,0,0.08);
-            margin-bottom: 30px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            border: 2px solid transparent;
+        }
+
+        .tool-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.12);
+        }
+
+        .tool-card.active {
+            border-color: #667eea;
+            background: linear-gradient(to bottom right, #ffffff, #f8f9ff);
         }
 
         .tool-icon {
-            width: 80px;
-            height: 80px;
+            width: 60px;
+            height: 60px;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            border-radius: 16px;
+            border-radius: 12px;
             display: flex;
             align-items: center;
             justify-content: center;
-            margin: 0 auto 30px;
-            font-size: 36px;
+            margin-bottom: 20px;
+            font-size: 28px;
         }
 
         .tool-title {
-            font-size: 2rem;
-            margin-bottom: 15px;
+            font-size: 1.5rem;
+            margin-bottom: 10px;
             color: #2c3e50;
-            text-align: center;
         }
 
         .tool-description {
             color: #718096;
             line-height: 1.6;
-            text-align: center;
-            margin-bottom: 40px;
-            font-size: 1.1rem;
         }
 
-        .form-section {
-            margin-bottom: 40px;
-            padding: 30px;
-            background: #f8f9ff;
-            border-radius: 10px;
-            border: 1px solid #e2e8f0;
+        .workspace {
+            background: white;
+            border-radius: 12px;
+            padding: 40px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+            min-height: 500px;
         }
 
-        .form-section-title {
-            font-size: 1.3rem;
-            margin-bottom: 20px;
-            color: #2c3e50;
+        .workspace-header {
             display: flex;
             align-items: center;
-            gap: 10px;
+            justify-content: space-between;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #e2e8f0;
+        }
+
+        .workspace-title {
+            font-size: 1.8rem;
+            color: #2c3e50;
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 24px;
+            color: #a0aec0;
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+
+        .close-btn:hover {
+            color: #4a5568;
         }
 
         .form-group {
@@ -153,54 +186,44 @@
             border-color: #a0aec0;
         }
 
-        .file-input-label.has-file {
-            background: #e6fffa;
-            border-color: #4fd1c5;
-            color: #047481;
+        .file-list {
+            margin-top: 15px;
         }
 
-        .experiment-inputs {
-            max-height: 300px;
-            overflow-y: auto;
-            margin-bottom: 20px;
-        }
-
-        .experiment-item {
-            background: white;
-            padding: 15px;
-            border-radius: 8px;
-            margin-bottom: 10px;
-            border: 1px solid #e2e8f0;
-        }
-
-        .add-experiment-btn {
-            width: 100%;
-            padding: 10px;
+        .file-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 15px;
             background: #f7fafc;
-            border: 2px dashed #cbd5e0;
-            border-radius: 8px;
-            color: #4a5568;
-            cursor: pointer;
-            transition: all 0.2s;
-            font-weight: 600;
+            border-radius: 6px;
+            margin-bottom: 8px;
         }
 
-        .add-experiment-btn:hover {
-            background: #edf2f7;
-            border-color: #a0aec0;
+        .file-name {
+            color: #4a5568;
+            font-size: 14px;
+        }
+
+        .remove-file {
+            background: none;
+            border: none;
+            color: #e53e3e;
+            cursor: pointer;
+            font-size: 18px;
         }
 
         .btn {
-            padding: 14px 40px;
+            padding: 12px 30px;
             border: none;
             border-radius: 8px;
-            font-size: 18px;
+            font-size: 16px;
             font-weight: 600;
             cursor: pointer;
             transition: all 0.2s;
             display: inline-flex;
             align-items: center;
-            gap: 10px;
+            gap: 8px;
         }
 
         .btn-primary {
@@ -228,23 +251,11 @@
             background: #cbd5e0;
         }
 
-        .btn-container {
-            text-align: center;
-            margin-top: 40px;
-        }
-
-        .progress-section {
-            margin-top: 40px;
-            padding: 30px;
-            background: #f7fafc;
-            border-radius: 10px;
-        }
-
         .progress-bar {
             width: 100%;
-            height: 10px;
+            height: 8px;
             background: #e2e8f0;
-            border-radius: 5px;
+            border-radius: 4px;
             overflow: hidden;
             margin: 20px 0;
         }
@@ -262,7 +273,6 @@
             display: flex;
             align-items: center;
             gap: 10px;
-            font-weight: 500;
         }
 
         .status-info {
@@ -283,41 +293,22 @@
             border: 1px solid #feb2b2;
         }
 
-        .status-warning {
-            background: #fffaf0;
-            color: #7b341e;
-            border: 1px solid #feb062;
-        }
-
         .results-section {
-            margin-top: 40px;
-        }
-
-        .results-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 20px;
             margin-top: 30px;
+            padding-top: 30px;
+            border-top: 2px solid #e2e8f0;
         }
 
-        .result-card {
-            background: white;
-            padding: 25px;
-            border-radius: 10px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-            border: 1px solid #e2e8f0;
-        }
-
-        .result-card-title {
-            font-size: 1.2rem;
-            margin-bottom: 15px;
+        .results-title {
+            font-size: 1.3rem;
+            margin-bottom: 20px;
             color: #2c3e50;
-            display: flex;
-            align-items: center;
-            gap: 8px;
         }
 
-        .result-details {
+        .result-item {
+            background: #f7fafc;
+            padding: 20px;
+            border-radius: 8px;
             margin-bottom: 15px;
         }
 
@@ -329,13 +320,13 @@
 
         .result-value {
             color: #2c3e50;
-            margin-bottom: 10px;
         }
 
         .download-btn {
-            width: 100%;
-            justify-content: center;
-            margin-top: 15px;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 10px;
         }
 
         .api-key-warning {
@@ -344,11 +335,8 @@
             color: #7b341e;
             padding: 15px;
             border-radius: 8px;
-            margin-bottom: 30px;
+            margin-bottom: 20px;
             font-size: 14px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
         }
 
         .loading-spinner {
@@ -366,63 +354,34 @@
             100% { transform: rotate(360deg); }
         }
 
-        .remove-file {
-            background: none;
-            border: none;
-            color: #e53e3e;
-            cursor: pointer;
-            font-size: 18px;
-            padding: 5px;
+        .experiment-inputs {
+            max-height: 300px;
+            overflow-y: auto;
+            margin-bottom: 20px;
         }
 
-        .remove-file:hover {
-            color: #c53030;
+        .experiment-item {
+            background: #f7fafc;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 10px;
         }
 
-        .step-indicator {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin: 30px 0;
-        }
-
-        .step {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .step-number {
-            width: 36px;
-            height: 36px;
-            background: #e2e8f0;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: 600;
+        .add-experiment-btn {
+            width: 100%;
+            padding: 10px;
+            background: #f7fafc;
+            border: 2px dashed #cbd5e0;
+            border-radius: 8px;
             color: #4a5568;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-weight: 600;
         }
 
-        .step-number.active {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-        }
-
-        .step-number.completed {
-            background: #48bb78;
-            color: white;
-        }
-
-        .step-line {
-            width: 80px;
-            height: 2px;
-            background: #e2e8f0;
-            margin: 0 10px;
-        }
-
-        .step-line.completed {
-            background: #48bb78;
+        .add-experiment-btn:hover {
+            background: #edf2f7;
+            border-color: #a0aec0;
         }
 
         .preview-section {
@@ -440,42 +399,6 @@
             font-size: 14px;
             line-height: 1.6;
         }
-
-        .collapsible-section {
-            margin-top: 20px;
-        }
-
-        .collapsible-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 15px 20px;
-            background: #f7fafc;
-            border-radius: 8px;
-            cursor: pointer;
-            user-select: none;
-            transition: background 0.2s;
-        }
-
-        .collapsible-header:hover {
-            background: #edf2f7;
-        }
-
-        .collapsible-content {
-            margin-top: 10px;
-            padding: 20px;
-            background: white;
-            border: 1px solid #e2e8f0;
-            border-radius: 8px;
-        }
-
-        .chevron {
-            transition: transform 0.2s;
-        }
-
-        .chevron.open {
-            transform: rotate(180deg);
-        }
     </style>
 </head>
 <body>
@@ -485,184 +408,177 @@
         const { useState, useEffect, useRef } = React;
 
         // API base URL - update this if your backend is on a different host
-        const API_URL = 'https://openmotor-backend.onrender.com';
+        const API_URL = 'http://localhost:5000';
 
         const App = () => {
-            const [apiKey, setApiKey] = useState('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');
-            const [pdfFile, setPdfFile] = useState(null);
-            const [experiments, setExperiments] = useState([{ id: 1, csvFile: null }]);
+            const [selectedTool, setSelectedTool] = useState(null);
+            const [apiKey, setApiKey] = useState('');
             const [isProcessing, setIsProcessing] = useState(false);
-            const [currentStep, setCurrentStep] = useState(0);
             const [status, setStatus] = useState(null);
-            const [results, setResults] = useState({
-                standardization: null,
-                template: null,
-                readme: {}
-            });
-            const [progress, setProgress] = useState(0);
-            const [expandedSections, setExpandedSections] = useState({
-                standardization: false,
-                template: false,
-                readme: false
-            });
+            const [results, setResults] = useState(null);
 
-            const addExperiment = () => {
-                setExperiments([...experiments, { id: experiments.length + 1, csvFile: null }]);
-            };
-
-            const updateExperimentFile = (id, file) => {
-                setExperiments(experiments.map(exp => 
-                    exp.id === id ? { ...exp, csvFile: file } : exp
-                ));
-            };
-
-            const removeExperiment = (id) => {
-                if (experiments.length > 1) {
-                    setExperiments(experiments.filter(exp => exp.id !== id));
+            const tools = [
+                {
+                    id: 'standardizer',
+                    icon: '📊',
+                    title: 'CSV Standardizer',
+                    description: 'Standardize motor research CSV data to OpenMotor format with intelligent column mapping'
+                },
+                {
+                    id: 'template',
+                    icon: '📝',
+                    title: 'Template Filler',
+                    description: 'Automatically fill OpenMotor description templates from research papers and CSV files'
+                },
+                {
+                    id: 'readme',
+                    icon: '📄',
+                    title: 'README Generator',
+                    description: 'Generate comprehensive README files for experiments from research papers'
                 }
+            ];
+
+            const handleToolSelect = (toolId) => {
+                setSelectedTool(toolId);
+                setStatus(null);
+                setResults(null);
             };
 
-            const toggleSection = (section) => {
-                setExpandedSections(prev => ({
-                    ...prev,
-                    [section]: !prev[section]
-                }));
+            const handleClose = () => {
+                setSelectedTool(null);
+                setStatus(null);
+                setResults(null);
             };
+
+            return (
+                <div>
+                    <div className="header">
+                        <div className="container">
+                            <h1>OpenMotor Research Tools Suite</h1>
+                            <p>Streamline your motor learning research data processing</p>
+                        </div>
+                    </div>
+
+                    <div className="container">
+                        {!selectedTool ? (
+                            <div className="tools-grid">
+                                {tools.map(tool => (
+                                    <div
+                                        key={tool.id}
+                                        className="tool-card"
+                                        onClick={() => handleToolSelect(tool.id)}
+                                    >
+                                        <div className="tool-icon">{tool.icon}</div>
+                                        <h3 className="tool-title">{tool.title}</h3>
+                                        <p className="tool-description">{tool.description}</p>
+                                    </div>
+                                ))}
+                            </div>
+                        ) : (
+                            <div className="workspace">
+                                <div className="workspace-header">
+                                    <h2 className="workspace-title">
+                                        {tools.find(t => t.id === selectedTool).title}
+                                    </h2>
+                                    <button className="close-btn" onClick={handleClose}>✕</button>
+                                </div>
+
+                                {selectedTool === 'standardizer' && (
+                                    <CSVStandardizer 
+                                        apiKey={apiKey}
+                                        setApiKey={setApiKey}
+                                        isProcessing={isProcessing}
+                                        setIsProcessing={setIsProcessing}
+                                        status={status}
+                                        setStatus={setStatus}
+                                        results={results}
+                                        setResults={setResults}
+                                    />
+                                )}
+
+                                {selectedTool === 'template' && (
+                                    <TemplateFiller
+                                        apiKey={apiKey}
+                                        setApiKey={setApiKey}
+                                        isProcessing={isProcessing}
+                                        setIsProcessing={setIsProcessing}
+                                        status={status}
+                                        setStatus={setStatus}
+                                        results={results}
+                                        setResults={setResults}
+                                    />
+                                )}
+
+                                {selectedTool === 'readme' && (
+                                    <ReadmeGenerator
+                                        apiKey={apiKey}
+                                        setApiKey={setApiKey}
+                                        isProcessing={isProcessing}
+                                        setIsProcessing={setIsProcessing}
+                                        status={status}
+                                        setStatus={setStatus}
+                                        results={results}
+                                        setResults={setResults}
+                                    />
+                                )}
+                            </div>
+                        )}
+                    </div>
+                </div>
+            );
+        };
+
+        const CSVStandardizer = ({ apiKey, setApiKey, isProcessing, setIsProcessing, status, setStatus, results, setResults }) => {
+            const [csvFile, setCsvFile] = useState(null);
+            const [pdfFile, setPdfFile] = useState(null);
+            const [progress, setProgress] = useState(0);
 
             const handleProcess = async () => {
-                if (experiments.every(exp => !exp.csvFile)) {
-                    setStatus({ type: 'error', message: 'Please provide at least one CSV file' });
+                if (!apiKey || !csvFile) {
+                    setStatus({ type: 'error', message: 'Please provide API key and CSV file' });
                     return;
                 }
 
                 setIsProcessing(true);
                 setProgress(0);
-                setCurrentStep(1);
-                setStatus({ type: 'info', message: 'Starting unified processing...' });
-                setResults({ standardization: null, template: null, readme: {} });
+                setStatus({ type: 'info', message: 'Starting CSV standardization...' });
+
+                const formData = new FormData();
+                formData.append('api_key', apiKey);
+                formData.append('csv_file', csvFile);
+                if (pdfFile) {
+                    formData.append('pdf_file', pdfFile);
+                }
 
                 try {
-                    // Step 1: Standardize CSVs
-                    setStatus({ type: 'info', message: 'Step 1/3: Standardizing CSV files...' });
-                    const standardizedFiles = [];
-                    
-                    for (let i = 0; i < experiments.length; i++) {
-                        const exp = experiments[i];
-                        if (!exp.csvFile) continue;
-                        
-                        const formData = new FormData();
-                        formData.append('api_key', apiKey);
-                        formData.append('csv_file', exp.csvFile);
-                        if (pdfFile) {
-                            formData.append('pdf_file', pdfFile);
-                        }
+                    const progressInterval = setInterval(() => {
+                        setProgress(prev => Math.min(prev + 10, 90));
+                    }, 500);
 
-                        const response = await axios.post(`${API_URL}/api/standardize`, formData, {
-                            headers: { 'Content-Type': 'multipart/form-data' }
+                    const response = await axios.post(`${API_URL}/api/standardize`, formData, {
+                        headers: {
+                            'Content-Type': 'multipart/form-data',
+                        },
+                    });
+
+                    clearInterval(progressInterval);
+                    setProgress(100);
+
+                    if (response.data.success) {
+                        setStatus({ type: 'success', message: 'Standardization complete!' });
+                        setResults({
+                            standardizedFile: response.data.standardized_file,
+                            report: response.data.report,
+                            downloadUrl: response.data.download_url
                         });
-
-                        if (response.data.success) {
-                            // Download the standardized file
-                            const fileResponse = await axios.get(`${API_URL}${response.data.download_url}`, {
-                                responseType: 'blob'
-                            });
-                            
-                            const standardizedFile = new File(
-                                [fileResponse.data], 
-                                `standardized_exp${i + 1}.csv`,
-                                { type: 'text/csv' }
-                            );
-                            
-                            standardizedFiles.push({
-                                file: standardizedFile,
-                                report: response.data.report,
-                                originalName: exp.csvFile.name,
-                                experimentNumber: i + 1
-                            });
-                        }
-                        
-                        setProgress(Math.round((i + 1) / experiments.length * 33));
+                    } else {
+                        setStatus({ type: 'error', message: 'Standardization failed' });
                     }
-
-                    setResults(prev => ({
-                        ...prev,
-                        standardization: standardizedFiles
-                    }));
-
-                    // Step 2: Fill Template
-                    setCurrentStep(2);
-                    setStatus({ type: 'info', message: 'Step 2/3: Filling description template...' });
-                    
-                    const templateFormData = new FormData();
-                    templateFormData.append('api_key', apiKey);
-                    if (pdfFile) {
-                        templateFormData.append('pdf_file', pdfFile);
-                    }
-                    
-                    standardizedFiles.forEach((file, index) => {
-                        templateFormData.append(`csv_file_${index}`, file.file);
-                    });
-
-                    const templateResponse = await axios.post(`${API_URL}/api/fill-template`, templateFormData, {
-                        headers: { 'Content-Type': 'multipart/form-data' }
-                    });
-
-                    if (templateResponse.data.success) {
-                        setResults(prev => ({
-                            ...prev,
-                            template: {
-                                outputFile: templateResponse.data.output_file,
-                                experimentsProcessed: templateResponse.data.experiments_processed,
-                                downloadUrl: templateResponse.data.download_url
-                            }
-                        }));
-                    }
-                    
-                    setProgress(66);
-
-                    // Step 3: Generate READMEs
-                    setCurrentStep(3);
-                    setStatus({ type: 'info', message: 'Step 3/3: Generating README files...' });
-                    
-                    const readmeResults = {};
-                    
-                    for (let i = 0; i < experiments.length; i++) {
-                        const readmeFormData = new FormData();
-                        readmeFormData.append('api_key', apiKey);
-                        readmeFormData.append('pdf_file', pdfFile);
-                        readmeFormData.append('experiment_number', i + 1);
-
-                        try {
-                            const readmeResponse = await axios.post(`${API_URL}/api/generate-readme`, readmeFormData, {
-                                headers: { 'Content-Type': 'multipart/form-data' }
-                            });
-
-                            if (readmeResponse.data.success) {
-                                readmeResults[i + 1] = {
-                                    filename: readmeResponse.data.filename,
-                                    downloadUrl: readmeResponse.data.download_url,
-                                    preview: readmeResponse.data.content_preview
-                                };
-                            }
-                        } catch (error) {
-                            console.error(`Error generating README for experiment ${i + 1}:`, error);
-                        }
-                        
-                        setProgress(66 + Math.round((i + 1) / experiments.length * 34));
-                    }
-
-                    setResults(prev => ({
-                        ...prev,
-                        readme: readmeResults
-                    }));
-
-                    setCurrentStep(4);
-                    setStatus({ type: 'success', message: 'All processing complete! Your files are ready for download.' });
-                    
                 } catch (error) {
+                    clearInterval(progressInterval);
                     setStatus({ 
                         type: 'error', 
-                        message: error.response?.data?.error || 'Error during processing'
+                        message: error.response?.data?.error || 'Error processing CSV file'
                     });
                     console.error('Error:', error);
                 } finally {
@@ -691,290 +607,540 @@
                 }
             };
 
-            const downloadAllFiles = async () => {
-                setStatus({ type: 'info', message: 'Preparing all files for download...' });
+            return (
+                <div>
+                    <div className="api-key-warning">
+                        ⚠️ This tool requires an Anthropic API key to use Claude AI for intelligent column mapping.
+                    </div>
+
+                    <div className="form-group">
+                        <label className="form-label">Anthropic API Key</label>
+                        <input
+                            type="password"
+                            className="form-input"
+                            placeholder="sk-ant-api03-..."
+                            value={apiKey}
+                            onChange={(e) => setApiKey(e.target.value)}
+                        />
+                    </div>
+
+                    <div className="form-group">
+                        <label className="form-label">CSV File to Standardize *</label>
+                        <div className="file-input-wrapper">
+                            <input
+                                type="file"
+                                id="csv-input"
+                                className="file-input"
+                                accept=".csv"
+                                onChange={(e) => setCsvFile(e.target.files[0])}
+                            />
+                            <label htmlFor="csv-input" className="file-input-label">
+                                {csvFile ? csvFile.name : 'Click to select CSV file'}
+                            </label>
+                        </div>
+                    </div>
+
+                    <div className="form-group">
+                        <label className="form-label">Research Paper PDF (Optional)</label>
+                        <div className="file-input-wrapper">
+                            <input
+                                type="file"
+                                id="pdf-input"
+                                className="file-input"
+                                accept=".pdf"
+                                onChange={(e) => setPdfFile(e.target.files[0])}
+                            />
+                            <label htmlFor="pdf-input" className="file-input-label">
+                                {pdfFile ? pdfFile.name : 'Click to select PDF (helps with column mapping)'}
+                            </label>
+                        </div>
+                    </div>
+
+                    <button 
+                        className="btn btn-primary"
+                        onClick={handleProcess}
+                        disabled={isProcessing || !apiKey || !csvFile}
+                    >
+                        {isProcessing ? (
+                            <>
+                                <span className="loading-spinner"></span>
+                                Processing...
+                            </>
+                        ) : (
+                            <>📊 Standardize CSV</>
+                        )}
+                    </button>
+
+                    {isProcessing && (
+                        <div className="progress-bar">
+                            <div className="progress-fill" style={{ width: `${progress}%` }}></div>
+                        </div>
+                    )}
+
+                    {status && (
+                        <div className={`status-message status-${status.type}`}>
+                            {status.type === 'info' && '🔄'}
+                            {status.type === 'success' && '✅'}
+                            {status.type === 'error' && '❌'}
+                            {status.message}
+                        </div>
+                    )}
+
+                    {results && results.report && (
+                        <div className="results-section">
+                            <h3 className="results-title">Standardization Results</h3>
+                            <div className="result-item">
+                                <div className="result-label">Mapped Columns</div>
+                                <div className="result-value">
+                                    {results.report.total_columns_mapped} columns successfully mapped to OpenMotor standards
+                                </div>
+                            </div>
+                            <div className="result-item">
+                                <div className="result-label">Custom Columns</div>
+                                <div className="result-value">{results.report.custom_columns} custom columns preserved</div>
+                            </div>
+                            <div className="result-item">
+                                <div className="result-label">Mapping Confidence</div>
+                                <div className="result-value">
+                                    High: {results.report.mappings_summary.high_confidence}, 
+                                    Medium: {results.report.mappings_summary.medium_confidence}, 
+                                    Low: {results.report.mappings_summary.low_confidence}
+                                </div>
+                            </div>
+                            <div className="result-item">
+                                <div className="result-label">Required Columns Status</div>
+                                <div className="result-value">
+                                    {Object.entries(results.report.required_columns_status).map(([col, status]) => (
+                                        <div key={col}>
+                                            {col}: {status.present ? `✓ ${(status.completeness * 100).toFixed(0)}% complete` : '✗ Missing'}
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                            <div className="result-item">
+                                <div className="result-label">Output Files</div>
+                                <button 
+                                    className="btn btn-secondary download-btn"
+                                    onClick={() => handleDownload(results.downloadUrl, results.standardizedFile)}
+                                >
+                                    📥 Download Standardized CSV
+                                </button>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
+        };
+
+        const TemplateFiller = ({ apiKey, setApiKey, isProcessing, setIsProcessing, status, setStatus, results, setResults }) => {
+            const [pdfFile, setPdfFile] = useState(null);
+            const [experiments, setExperiments] = useState([{ id: 1, csvFile: null }]);
+            const [progress, setProgress] = useState(0);
+
+            const addExperiment = () => {
+                setExperiments([...experiments, { id: experiments.length + 1, csvFile: null }]);
+            };
+
+            const updateExperimentFile = (id, file) => {
+                setExperiments(experiments.map(exp => 
+                    exp.id === id ? { ...exp, csvFile: file } : exp
+                ));
+            };
+
+            const removeExperiment = (id) => {
+                if (experiments.length > 1) {
+                    setExperiments(experiments.filter(exp => exp.id !== id));
+                }
+            };
+
+            const handleProcess = async () => {
+                if (!apiKey || experiments.every(exp => !exp.csvFile)) {
+                    setStatus({ type: 'error', message: 'Please provide API key and at least one CSV file' });
+                    return;
+                }
+
+                setIsProcessing(true);
+                setProgress(0);
+                setStatus({ type: 'info', message: 'Starting template filling process...' });
+
+                const formData = new FormData();
+                formData.append('api_key', apiKey);
+                if (pdfFile) {
+                    formData.append('pdf_file', pdfFile);
+                }
                 
-                // Download standardized CSVs
-                if (results.standardization) {
-                    for (const file of results.standardization) {
-                        const blob = new Blob([file.file]);
-                        const url = window.URL.createObjectURL(blob);
-                        const link = document.createElement('a');
-                        link.href = url;
-                        link.download = file.file.name;
-                        document.body.appendChild(link);
-                        link.click();
-                        document.body.removeChild(link);
-                        window.URL.revokeObjectURL(url);
-                        await new Promise(resolve => setTimeout(resolve, 500)); // Small delay between downloads
+                experiments.forEach((exp, index) => {
+                    if (exp.csvFile) {
+                        formData.append(`csv_file_${index}`, exp.csvFile);
                     }
+                });
+
+                try {
+                    const progressInterval = setInterval(() => {
+                        setProgress(prev => Math.min(prev + 5, 90));
+                    }, 500);
+
+                    const response = await axios.post(`${API_URL}/api/fill-template`, formData, {
+                        headers: {
+                            'Content-Type': 'multipart/form-data',
+                        },
+                    });
+
+                    clearInterval(progressInterval);
+                    setProgress(100);
+
+                    if (response.data.success) {
+                        setStatus({ type: 'success', message: 'Template filling complete!' });
+                        setResults({
+                            outputFile: response.data.output_file,
+                            experimentsProcessed: response.data.experiments_processed,
+                            downloadUrl: response.data.download_url
+                        });
+                    } else {
+                        setStatus({ type: 'error', message: 'Template filling failed' });
+                    }
+                } catch (error) {
+                    clearInterval(progressInterval);
+                    setStatus({ 
+                        type: 'error', 
+                        message: error.response?.data?.error || 'Error processing files'
+                    });
+                    console.error('Error:', error);
+                } finally {
+                    setIsProcessing(false);
                 }
-                
-                // Download template
-                if (results.template) {
-                    await handleDownload(results.template.downloadUrl, results.template.outputFile);
-                    await new Promise(resolve => setTimeout(resolve, 500));
+            };
+
+            const handleDownload = async (url, filename) => {
+                try {
+                    const response = await axios.get(`${API_URL}${url}`, {
+                        responseType: 'blob'
+                    });
+                    
+                    const blob = new Blob([response.data]);
+                    const downloadUrl = window.URL.createObjectURL(blob);
+                    const link = document.createElement('a');
+                    link.href = downloadUrl;
+                    link.download = filename;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    window.URL.revokeObjectURL(downloadUrl);
+                } catch (error) {
+                    console.error('Download error:', error);
+                    setStatus({ type: 'error', message: 'Error downloading file' });
                 }
-                
-                // Download READMEs
-                for (const [expNum, readme] of Object.entries(results.readme)) {
-                    await handleDownload(readme.downloadUrl, readme.filename);
-                    await new Promise(resolve => setTimeout(resolve, 500));
-                }
-                
-                setStatus({ type: 'success', message: 'All files downloaded successfully!' });
             };
 
             return (
                 <div>
-                    <div className="header">
-                        <div className="container">
-                            <h1>OpenMotor Research Tools Suite</h1>
-                            <p>All-in-One Processing: CSV Standardization + Template Filling + README Generation</p>
+                    <div className="api-key-warning">
+                        ⚠️ This tool uses Claude AI to intelligently extract information from research papers and data.
+                    </div>
+
+                    <div className="form-group">
+                        <label className="form-label">Anthropic API Key</label>
+                        <input
+                            type="password"
+                            className="form-input"
+                            placeholder="sk-ant-api03-..."
+                            value={apiKey}
+                            onChange={(e) => setApiKey(e.target.value)}
+                        />
+                    </div>
+
+                    <div className="form-group">
+                        <label className="form-label">Research Paper PDF (Optional but recommended)</label>
+                        <div className="file-input-wrapper">
+                            <input
+                                type="file"
+                                id="pdf-template"
+                                className="file-input"
+                                accept=".pdf"
+                                onChange={(e) => setPdfFile(e.target.files[0])}
+                            />
+                            <label htmlFor="pdf-template" className="file-input-label">
+                                {pdfFile ? pdfFile.name : 'Click to select PDF'}
+                            </label>
                         </div>
                     </div>
 
-                    <div className="container">
-                        <div className="main-card">
-                            <div className="tool-icon">🚀</div>
-                            <h2 className="tool-title">Unified Research Data Processor</h2>
-                            <p className="tool-description">
-                                Uploadd your research paper PDF and experiment CSV files once, and get all three outputs: 
-                                standardized CSVs, filled description template, and README files for each experiment.
-                            </p>
-
-                            <div className="form-section">
-                                <h3 className="form-section-title">
-                                    <span>📋</span> Input Files
-                                </h3>
-
-                                <div className="form-group">
-                                    <label className="form-label">Research Paper PDF (Recommended)</label>
-                                    <div className="file-input-wrapper">
+                    <div className="form-group">
+                        <label className="form-label">Experiment CSV Files</label>
+                        <div className="experiment-inputs">
+                            {experiments.map((exp, index) => (
+                                <div key={exp.id} className="experiment-item">
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                        <span style={{ fontWeight: 600 }}>Experiment {index + 1}</span>
+                                        {experiments.length > 1 && (
+                                            <button 
+                                                className="remove-file"
+                                                onClick={() => removeExperiment(exp.id)}
+                                            >
+                                                ✕
+                                            </button>
+                                        )}
+                                    </div>
+                                    <div className="file-input-wrapper" style={{ marginTop: '10px' }}>
                                         <input
                                             type="file"
-                                            id="pdf-unified"
+                                            id={`csv-exp-${exp.id}`}
                                             className="file-input"
-                                            accept=".pdf"
-                                            onChange={(e) => setPdfFile(e.target.files[0])}
-                                            disabled={isProcessing}
+                                            accept=".csv"
+                                            onChange={(e) => updateExperimentFile(exp.id, e.target.files[0])}
                                         />
-                                        <label htmlFor="pdf-unified" className={`file-input-label ${pdfFile ? 'has-file' : ''}`}>
-                                            {pdfFile ? `📄 ${pdfFile.name}` : '📄 Click to select PDF file'}
+                                        <label htmlFor={`csv-exp-${exp.id}`} className="file-input-label">
+                                            {exp.csvFile ? exp.csvFile.name : 'Click to select CSV file'}
                                         </label>
                                     </div>
                                 </div>
+                            ))}
+                        </div>
+                        <button className="add-experiment-btn" onClick={addExperiment}>
+                            + Add Another Experiment
+                        </button>
+                    </div>
 
-                                <div className="form-group">
-                                    <label className="form-label">Experiment CSV Files *</label>
-                                    <div className="experiment-inputs">
-                                        {experiments.map((exp, index) => (
-                                            <div key={exp.id} className="experiment-item">
-                                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                                                    <span style={{ fontWeight: 600 }}>Experiment {index + 1}</span>
-                                                    {experiments.length > 1 && (
-                                                        <button 
-                                                            className="remove-file"
-                                                            onClick={() => removeExperiment(exp.id)}
-                                                            disabled={isProcessing}
-                                                        >
-                                                            ✕
-                                                        </button>
-                                                    )}
-                                                </div>
-                                                <div className="file-input-wrapper" style={{ marginTop: '10px' }}>
-                                                    <input
-                                                        type="file"
-                                                        id={`csv-exp-${exp.id}`}
-                                                        className="file-input"
-                                                        accept=".csv"
-                                                        onChange={(e) => updateExperimentFile(exp.id, e.target.files[0])}
-                                                        disabled={isProcessing}
-                                                    />
-                                                    <label htmlFor={`csv-exp-${exp.id}`} className={`file-input-label ${exp.csvFile ? 'has-file' : ''}`}>
-                                                        {exp.csvFile ? `📊 ${exp.csvFile.name}` : '📊 Click to select CSV file'}
-                                                    </label>
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
+                    <button 
+                        className="btn btn-primary"
+                        onClick={handleProcess}
+                        disabled={isProcessing || !apiKey || experiments.every(exp => !exp.csvFile)}
+                    >
+                        {isProcessing ? (
+                            <>
+                                <span className="loading-spinner"></span>
+                                Processing...
+                            </>
+                        ) : (
+                            <>📝 Fill Template</>
+                        )}
+                    </button>
+
+                    {isProcessing && (
+                        <div className="progress-bar">
+                            <div className="progress-fill" style={{ width: `${progress}%` }}></div>
+                        </div>
+                    )}
+
+                    {status && (
+                        <div className={`status-message status-${status.type}`}>
+                            {status.type === 'info' && '🔄'}
+                            {status.type === 'success' && '✅'}
+                            {status.type === 'error' && '❌'}
+                            {status.message}
+                        </div>
+                    )}
+
+                    {results && (
+                        <div className="results-section">
+                            <h3 className="results-title">Template Filling Results</h3>
+                            <div className="result-item">
+                                <div className="result-label">Experiments Processed</div>
+                                <div className="result-value">{results.experimentsProcessed} experiments</div>
+                            </div>
+                            <div className="result-item">
+                                <div className="result-label">Output File</div>
+                                <button 
+                                    className="btn btn-secondary download-btn"
+                                    onClick={() => handleDownload(results.downloadUrl, results.outputFile)}
+                                >
+                                    📥 Download {results.outputFile}
+                                </button>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
+        };
+
+        const ReadmeGenerator = ({ apiKey, setApiKey, isProcessing, setIsProcessing, status, setStatus, results, setResults }) => {
+            const [pdfFile, setPdfFile] = useState(null);
+            const [experimentNumber, setExperimentNumber] = useState('1');
+            const [progress, setProgress] = useState(0);
+            const [readmePreview, setReadmePreview] = useState('');
+
+            const handleProcess = async () => {
+                if (!apiKey || !pdfFile) {
+                    setStatus({ type: 'error', message: 'Please provide API key and PDF file' });
+                    return;
+                }
+
+                setIsProcessing(true);
+                setProgress(0);
+                setStatus({ type: 'info', message: 'Reading PDF content...' });
+
+                const formData = new FormData();
+                formData.append('api_key', apiKey);
+                formData.append('pdf_file', pdfFile);
+                formData.append('experiment_number', experimentNumber);
+
+                try {
+                    const progressInterval = setInterval(() => {
+                        setProgress(prev => Math.min(prev + 10, 90));
+                    }, 300);
+
+                    const response = await axios.post(`${API_URL}/api/generate-readme`, formData, {
+                        headers: {
+                            'Content-Type': 'multipart/form-data',
+                        },
+                    });
+
+                    clearInterval(progressInterval);
+                    setProgress(100);
+
+                    if (response.data.success) {
+                        setStatus({ type: 'success', message: 'README generated successfully!' });
+                        setReadmePreview(response.data.content_preview);
+                        setResults({
+                            filename: response.data.filename,
+                            experimentNumber: response.data.experiment_number,
+                            downloadUrl: response.data.download_url
+                        });
+                    } else {
+                        setStatus({ type: 'error', message: 'README generation failed' });
+                    }
+                } catch (error) {
+                    clearInterval(progressInterval);
+                    if (error.response?.status === 404) {
+                        setStatus({ 
+                            type: 'error', 
+                            message: `Experiment ${experimentNumber} not found in the paper. Try a different experiment number.`
+                        });
+                    } else {
+                        setStatus({ 
+                            type: 'error', 
+                            message: error.response?.data?.error || 'Error generating README'
+                        });
+                    }
+                    console.error('Error:', error);
+                } finally {
+                    setIsProcessing(false);
+                }
+            };
+
+            const handleDownload = async (url, filename) => {
+                try {
+                    const response = await axios.get(`${API_URL}${url}`, {
+                        responseType: 'blob'
+                    });
+                    
+                    const blob = new Blob([response.data]);
+                    const downloadUrl = window.URL.createObjectURL(blob);
+                    const link = document.createElement('a');
+                    link.href = downloadUrl;
+                    link.download = filename;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    window.URL.revokeObjectURL(downloadUrl);
+                } catch (error) {
+                    console.error('Download error:', error);
+                    setStatus({ type: 'error', message: 'Error downloading file' });
+                }
+            };
+
+            return (
+                <div>
+                    <div className="api-key-warning">
+                        ⚠️ This tool uses Claude AI to extract experiment information and generate comprehensive README files.
+                    </div>
+
+                    <div className="form-group">
+                        <label className="form-label">Anthropic API Key</label>
+                        <input
+                            type="password"
+                            className="form-input"
+                            placeholder="sk-ant-api03-..."
+                            value={apiKey}
+                            onChange={(e) => setApiKey(e.target.value)}
+                        />
+                    </div>
+
+                    <div className="form-group">
+                        <label className="form-label">Research Paper PDF *</label>
+                        <div className="file-input-wrapper">
+                            <input
+                                type="file"
+                                id="pdf-readme"
+                                className="file-input"
+                                accept=".pdf"
+                                onChange={(e) => setPdfFile(e.target.files[0])}
+                            />
+                            <label htmlFor="pdf-readme" className="file-input-label">
+                                {pdfFile ? pdfFile.name : 'Click to select PDF file'}
+                            </label>
+                        </div>
+                    </div>
+
+                    <div className="form-group">
+                        <label className="form-label">Experiment Number</label>
+                        <input
+                            type="number"
+                            className="form-input"
+                            min="1"
+                            value={experimentNumber}
+                            onChange={(e) => setExperimentNumber(e.target.value)}
+                            placeholder="Enter experiment number (e.g., 1, 2, 3)"
+                        />
+                    </div>
+
+                    <button 
+                        className="btn btn-primary"
+                        onClick={handleProcess}
+                        disabled={isProcessing || !apiKey || !pdfFile}
+                    >
+                        {isProcessing ? (
+                            <>
+                                <span className="loading-spinner"></span>
+                                Processing...
+                            </>
+                        ) : (
+                            <>📄 Generate README</>
+                        )}
+                    </button>
+
+                    {isProcessing && (
+                        <div className="progress-bar">
+                            <div className="progress-fill" style={{ width: `${progress}%` }}></div>
+                        </div>
+                    )}
+
+                    {status && (
+                        <div className={`status-message status-${status.type}`}>
+                            {status.type === 'info' && '🔄'}
+                            {status.type === 'success' && '✅'}
+                            {status.type === 'error' && '❌'}
+                            {status.message}
+                        </div>
+                    )}
+
+                    {results && (
+                        <>
+                            <div className="results-section">
+                                <h3 className="results-title">README Generation Results</h3>
+                                <div className="result-item">
+                                    <div className="result-label">Experiment</div>
+                                    <div className="result-value">Experiment {results.experimentNumber}</div>
+                                </div>
+                                <div className="result-item">
+                                    <div className="result-label">Output File</div>
                                     <button 
-                                        className="add-experiment-btn" 
-                                        onClick={addExperiment}
-                                        disabled={isProcessing}
+                                        className="btn btn-secondary download-btn"
+                                        onClick={() => handleDownload(results.downloadUrl, results.filename)}
                                     >
-                                        + Add Another Experiment
+                                        📥 Download {results.filename}
                                     </button>
                                 </div>
                             </div>
 
-                            <div className="btn-container">
-                                <button 
-                                    className="btn btn-primary"
-                                    onClick={handleProcess}
-                                    disabled={isProcessing || experiments.every(exp => !exp.csvFile)}
-                                >
-                                    {isProcessing ? (
-                                        <>
-                                            <span className="loading-spinner"></span>
-                                            Processing All Files...
-                                        </>
-                                    ) : (
-                                        <>🚀 Process Everything</>
-                                    )}
-                                </button>
-                            </div>
-
-                            {isProcessing && (
-                                <div className="progress-section">
-                                    <div className="step-indicator">
-                                        <div className="step">
-                                            <div className={`step-number ${currentStep >= 1 ? (currentStep > 1 ? 'completed' : 'active') : ''}`}>1</div>
-                                            <span>Standardize CSVs</span>
-                                        </div>
-                                        <div className={`step-line ${currentStep > 1 ? 'completed' : ''}`}></div>
-                                        <div className="step">
-                                            <div className={`step-number ${currentStep >= 2 ? (currentStep > 2 ? 'completed' : 'active') : ''}`}>2</div>
-                                            <span>Fill Template</span>
-                                        </div>
-                                        <div className={`step-line ${currentStep > 2 ? 'completed' : ''}`}></div>
-                                        <div className="step">
-                                            <div className={`step-number ${currentStep >= 3 ? (currentStep > 3 ? 'completed' : 'active') : ''}`}>3</div>
-                                            <span>Generate READMEs</span>
-                                        </div>
-                                    </div>
-                                    <div className="progress-bar">
-                                        <div className="progress-fill" style={{ width: `${progress}%` }}></div>
-                                    </div>
+                            {readmePreview && (
+                                <div className="preview-section">
+                                    <h3 className="results-title">README Preview</h3>
+                                    <div className="preview-content">{readmePreview}</div>
                                 </div>
                             )}
-
-                            {status && (
-                                <div className={`status-message status-${status.type}`}>
-                                    {status.type === 'info' && '🔄'}
-                                    {status.type === 'success' && '✅'}
-                                    {status.type === 'error' && '❌'}
-                                    {status.type === 'warning' && '⚠️'}
-                                    {status.message}
-                                </div>
-                            )}
-
-                            {(results.standardization || results.template || Object.keys(results.readme).length > 0) && (
-                                <div className="results-section">
-                                    <h3 style={{ fontSize: '1.5rem', marginBottom: '20px', textAlign: 'center' }}>
-                                        🎉 Processing Complete - Download Your Files
-                                    </h3>
-                                    
-                                    <div style={{ textAlign: 'center', marginBottom: '30px' }}>
-                                        <button className="btn btn-primary" onClick={downloadAllFiles}>
-                                            📥 Download All Files
-                                        </button>
-                                    </div>
-
-                                    <div className="results-grid">
-                                        {/* Standardized CSVs */}
-                                        {results.standardization && (
-                                            <div className="result-card">
-                                                <h4 className="result-card-title">
-                                                    <span>📊</span> Standardized CSVs
-                                                </h4>
-                                                <div className="result-details">
-                                                    <div className="result-label">Files Generated</div>
-                                                    <div className="result-value">{results.standardization.length} standardized CSV files</div>
-                                                </div>
-                                                
-                                                <div className="collapsible-section">
-                                                    <div className="collapsible-header" onClick={() => toggleSection('standardization')}>
-                                                        <span>View Details</span>
-                                                        <span className={`chevron ${expandedSections.standardization ? 'open' : ''}`}>▼</span>
-                                                    </div>
-                                                    {expandedSections.standardization && (
-                                                        <div className="collapsible-content">
-                                                            {results.standardization.map((file, index) => (
-                                                                <div key={index} style={{ marginBottom: '15px' }}>
-                                                                    <strong>Experiment {file.experimentNumber}</strong>
-                                                                    <div style={{ fontSize: '14px', color: '#718096' }}>
-                                                                        Original: {file.originalName}<br/>
-                                                                        Mapped: {file.report.total_columns_mapped} columns<br/>
-                                                                        Confidence: {file.report.mappings_summary.high_confidence} high, 
-                                                                        {file.report.mappings_summary.medium_confidence} medium
-                                                                    </div>
-                                                                </div>
-                                                            ))}
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            </div>
-                                        )}
-
-                                        {/* Template */}
-                                        {results.template && (
-                                            <div className="result-card">
-                                                <h4 className="result-card-title">
-                                                    <span>📝</span> Description Template
-                                                </h4>
-                                                <div className="result-details">
-                                                    <div className="result-label">Status</div>
-                                                    <div className="result-value">✅ Template filled successfully</div>
-                                                    <div className="result-label">Experiments</div>
-                                                    <div className="result-value">{results.template.experimentsProcessed} experiments processed</div>
-                                                </div>
-                                                <button 
-                                                    className="btn btn-secondary download-btn"
-                                                    onClick={() => handleDownload(results.template.downloadUrl, results.template.outputFile)}
-                                                >
-                                                    📥 Download Template
-                                                </button>
-                                            </div>
-                                        )}
-
-                                        {/* READMEs */}
-                                        {Object.keys(results.readme).length > 0 && (
-                                            <div className="result-card">
-                                                <h4 className="result-card-title">
-                                                    <span>📄</span> README Files
-                                                </h4>
-                                                <div className="result-details">
-                                                    <div className="result-label">Files Generated</div>
-                                                    <div className="result-value">{Object.keys(results.readme).length} README files</div>
-                                                </div>
-                                                
-                                                <div className="collapsible-section">
-                                                    <div className="collapsible-header" onClick={() => toggleSection('readme')}>
-                                                        <span>View READMEs</span>
-                                                        <span className={`chevron ${expandedSections.readme ? 'open' : ''}`}>▼</span>
-                                                    </div>
-                                                    {expandedSections.readme && (
-                                                        <div className="collapsible-content">
-                                                            {Object.entries(results.readme).map(([expNum, readme]) => (
-                                                                <div key={expNum} style={{ marginBottom: '20px' }}>
-                                                                    <strong>Experiment {expNum}</strong>
-                                                                    <button 
-                                                                        className="btn btn-secondary"
-                                                                        style={{ marginTop: '10px', width: '100%' }}
-                                                                        onClick={() => handleDownload(readme.downloadUrl, readme.filename)}
-                                                                    >
-                                                                        📥 Download {readme.filename}
-                                                                    </button>
-                                                                    {readme.preview && (
-                                                                        <div className="preview-section" style={{ marginTop: '10px' }}>
-                                                                            <div className="preview-content" style={{ fontSize: '12px' }}>
-                                                                                {readme.preview}
-                                                                            </div>
-                                                                        </div>
-                                                                    )}
-                                                                </div>
-                                                            ))}
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-                    </div>
+                        </>
+                    )}
                 </div>
             );
         };
