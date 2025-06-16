@@ -130,7 +130,13 @@ class OpenMotorStandardizer:
             'researcher_id': 'researcher identifier',
             'reported_perturbation': 'reported perturbation',
             'true_perturbation': 'true perturbation',
-            'correct_reported_perturbation': 'correct reported perturbation'
+            'correct_reported_perturbation': 'correct reported perturbation',
+            'search_time': 'time from reaching end to return to start',
+            'block_number': 'block number',
+            'trial_type': 'type of trial',
+            'accuracy': 'trial accuracy',
+            'error': 'error measurement',
+            'score': 'performance score'
         }
         
         self.common_mappings = {
@@ -138,24 +144,35 @@ class OpenMotorStandardizer:
             'mt': 'movement_time',
             'sn': 'participant_idx',
             'subject_num': 'participant_idx',
+            'subject.id': 'participant_idx',
+            'subject_id': 'participant_idx',
             'subj': 'participant_idx',
+            'subj_id': 'participant_idx',
+            'participant_id': 'participant_idx',
+            'participant': 'participant_idx',
+            'subject': 'participant_idx',
             'tn': 'trial_number',
+            'trial': 'trial_number',
             'cn': 'condition',
             'bn': 'block_number',
+            'block': 'block_number',
             'cond': 'condition',
             'hand_theta': 'hand_angle',
             'tgt_ang': 'target_angle',
             'tgt_angle': 'target_angle',
             'target_ang': 'target_angle',
+            'ti': 'target_angle',
+            'ri': 'rotation_angle',
+            'rotation': 'rotation_angle',
+            'rot': 'rotation_angle',
             'age': 'participant_age',
             'sex': 'participant_sex',
+            'gender': 'participant_sex',
             'hand': 'dominant_hand',
             'handedness': 'dominant_hand',
             'education': 'years_of_education',
             'clamp': 'perturbation_value',
             'clampi': 'perturbation_value',
-            'rotation': 'rotation_angle',
-            'rot': 'rotation_angle',
             'perturb': 'perturbation_value',
             'fb': 'feedback',
             'fbi': 'feedback',
@@ -173,7 +190,26 @@ class OpenMotorStandardizer:
             'response_time': 'reaction_time',
             'movement_onset': 'reaction_time',
             'reach_time': 'movement_time',
-            'execution_time': 'movement_time'
+            'execution_time': 'movement_time',
+            'search_time': 'movement_time',
+            'st': 'movement_time',
+            'initial_angle': 'hand_angle',
+            'final_angle': 'hand_angle',
+            'movement_angle': 'hand_angle',
+            'movement_direction': 'hand_angle',
+            'reach_direction': 'hand_angle',
+            'reach_angle': 'hand_angle',
+            'cursor_angle': 'hand_angle',
+            'cursor_theta': 'hand_angle',
+            'endpoint_theta': 'hand_angle',
+            'cursor_x': 'click_x',
+            'cursor_y': 'click_y',
+            'endpoint_x': 'click_x',
+            'endpoint_y': 'click_y',
+            'x_position': 'click_x',
+            'y_position': 'click_y',
+            'x_pos': 'click_x',
+            'y_pos': 'click_y'
         }
         
         self.all_standard_columns = {**self.required_columns, **self.suggested_columns}
@@ -206,10 +242,15 @@ class OpenMotorStandardizer:
         
         for col in df.columns:
             sample_values = df[col].dropna().head(10).tolist() if len(df[col].dropna()) > 0 else []
-            sample_values = [
-                float(x) if isinstance(x, (np.integer, np.floating)) else str(x) 
-                for x in sample_values
-            ]
+            # Convert numpy types to Python native types for JSON serialization
+            converted_values = []
+            for x in sample_values:
+                if isinstance(x, (np.integer, np.int64, np.int32)):
+                    converted_values.append(int(x))
+                elif isinstance(x, (np.floating, np.float64, np.float32)):
+                    converted_values.append(float(x))
+                else:
+                    converted_values.append(str(x))
             
             col_analysis = {
                 'name': col,
@@ -217,7 +258,7 @@ class OpenMotorStandardizer:
                 'null_count': int(df[col].isnull().sum()),
                 'null_percentage': float(df[col].isnull().sum() / len(df) * 100),
                 'unique_values': int(df[col].nunique()),
-                'sample_values': sample_values,
+                'sample_values': converted_values,
                 'value_range': None,
                 'likely_type': None
             }
@@ -229,17 +270,17 @@ class OpenMotorStandardizer:
                         'min': float(col_numeric.min()),
                         'max': float(col_numeric.max()),
                         'mean': float(col_numeric.mean()),
-                        'std': float(col_numeric.std())
+                        'std': float(col_numeric.std()) if len(col_numeric) > 1 else 0.0
                     }
             
             analysis['columns'][col] = col_analysis
             
             col_lower = col.lower()
-            if any(x in col_lower for x in ['subj', 'participant', 'sn', 'id']):
+            if any(x in col_lower for x in ['participant', 'subject', 'subj', 'sn', 'id']):
                 analysis['likely_participant_cols'].append(col)
             elif any(x in col_lower for x in ['trial', 'tn', 'number']):
                 analysis['likely_trial_cols'].append(col)
-            elif any(x in col_lower for x in ['cond', 'cn', 'group', 'block']):
+            elif any(x in col_lower for x in ['condition', 'cond', 'group', 'block']):
                 analysis['likely_condition_cols'].append(col)
         
         return analysis
@@ -290,21 +331,58 @@ Return as JSON with keys: variable_mappings, units, conditions, abbreviations"""
             mapped = False
             col_lower = col_name.lower().strip()
             
-            for abbrev, standard in self.common_mappings.items():
-                if col_lower == abbrev or col_lower.replace('_', '') == abbrev:
+            # Try exact match first
+            if col_lower in self.common_mappings:
+                standard = self.common_mappings[col_lower]
+                if standard not in existing_mappings:
+                    mappings.append(ColumnMapping(
+                        original_name=col_name,
+                        standardized_name=standard,
+                        confidence=0.95,
+                        reasoning=f"Exact match: {col_lower} → {standard}",
+                        data_type="numeric" if col_info['dtype'] != 'object' else "text",
+                        unit=self._infer_unit(standard, col_info),
+                        transformation=""
+                    ))
+                    existing_mappings.add(standard)
+                    mapped = True
+            
+            # Try with dots replaced by underscores
+            if not mapped:
+                col_normalized = col_lower.replace('.', '_')
+                if col_normalized in self.common_mappings:
+                    standard = self.common_mappings[col_normalized]
                     if standard not in existing_mappings:
                         mappings.append(ColumnMapping(
                             original_name=col_name,
                             standardized_name=standard,
                             confidence=0.95,
-                            reasoning=f"Common abbreviation: {abbrev} → {standard}",
+                            reasoning=f"Normalized match: {col_name} → {standard}",
                             data_type="numeric" if col_info['dtype'] != 'object' else "text",
                             unit=self._infer_unit(standard, col_info),
                             transformation=""
                         ))
                         existing_mappings.add(standard)
                         mapped = True
-                        break
+            
+            # Try removing all punctuation
+            if not mapped:
+                col_clean = col_lower.replace('_', '').replace('.', '').replace('-', '')
+                for abbrev, standard in self.common_mappings.items():
+                    if col_clean == abbrev.replace('_', '').replace('.', '').replace('-', ''):
+                        if standard not in existing_mappings:
+                            mappings.append(ColumnMapping(
+                                original_name=col_name,
+                                standardized_name=standard,
+                                confidence=0.92,
+                                reasoning=f"Clean match: {abbrev} → {standard}",
+                                data_type="numeric" if col_info['dtype'] != 'object' else "text",
+                                unit=self._infer_unit(standard, col_info),
+                                transformation=""
+                            ))
+                            existing_mappings.add(standard)
+                            mapped = True
+                            break
             
             if not mapped:
                 unmapped_columns.append((col_name, col_info))
@@ -312,13 +390,27 @@ Return as JSON with keys: variable_mappings, units, conditions, abbreviations"""
         if unmapped_columns:
             prompt = f"""Map these columns to OpenMotor standards. Be AGGRESSIVE in finding mappings.
 
+Important notes:
+- 'ti' = target_angle
+- 'ri' = rotation_angle (or rotation present = 1 or not present = 0)
+- 'ST' = search_time/movement_time (time from finishing reaching to returning to start position)
+- subject.id, subject_id, subj_id all map to participant_idx
+- Look for any variations of these abbreviations
+
 Unmapped columns:
 {json.dumps([{'name': c[0], 'info': c[1]} for c in unmapped_columns], indent=2)}
 
 Standard columns available:
 {json.dumps(self.all_standard_columns, indent=2)}
 
-Return JSON array with mappings."""
+Return JSON array with mappings. Each mapping should have:
+- original_name: the column name from the CSV
+- standardized_name: the OpenMotor standard column name
+- confidence: 0-1 confidence score
+- reasoning: explanation of the mapping
+- data_type: "numeric" or "text"
+- unit: unit of measurement if applicable
+- transformation: any transformation needed"""
 
             try:
                 response = self.client.messages.create(
@@ -502,29 +594,35 @@ class OpenMotorTemplateFiller:
             
             analysis = {
                 'file_name': os.path.basename(csv_path),
-                'total_rows': len(df),
+                'total_rows': int(len(df)),
                 'columns': list(df.columns),
                 'num_subjects': 'N/A',
                 'num_conditions': 1,
                 'most_common_block_size': 'N/A'
             }
             
+            # More flexible participant column detection
             participant_cols = [col for col in df.columns if any(
-                x in col.lower() for x in ['participant', 'subject', 'subj', 'sn', 'id']
+                x in col.lower() for x in ['participant', 'subject', 'subj', 'sn', 'id', 'participant_idx']
             )]
             if participant_cols:
-                analysis['num_subjects'] = df[participant_cols[0]].nunique()
+                # Convert to int to avoid JSON serialization issues
+                unique_participants = df[participant_cols[0]].nunique()
+                analysis['num_subjects'] = int(unique_participants) if pd.notna(unique_participants) else 'N/A'
             
             condition_cols = [col for col in df.columns if any(
                 x in col.lower() for x in ['condition', 'cond', 'group']
             )]
             if condition_cols:
-                analysis['num_conditions'] = df[condition_cols[0]].nunique()
+                unique_conditions = df[condition_cols[0]].nunique()
+                analysis['num_conditions'] = int(unique_conditions) if pd.notna(unique_conditions) else 1
             
             block_cols = [col for col in df.columns if 'block' in col.lower()]
             if block_cols and participant_cols:
                 block_sizes = df.groupby(block_cols[0]).size()
-                analysis['most_common_block_size'] = block_sizes.mode()[0] if len(block_sizes) > 0 else 'N/A'
+                if len(block_sizes) > 0:
+                    mode_value = block_sizes.mode()[0]
+                    analysis['most_common_block_size'] = int(mode_value) if pd.notna(mode_value) else 'N/A'
             
             return analysis
             
