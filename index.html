@@ -488,7 +488,7 @@
         const API_URL = 'https://openmotor-backend.onrender.com';
 
         const App = () => {
-            const [apiKey, setApiKey] = useState('');
+            const [apiKey, setApiKey] = useState('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');
             const [pdfFile, setPdfFile] = useState(null);
             const [experiments, setExperiments] = useState([{ id: 1, csvFile: null }]);
             const [isProcessing, setIsProcessing] = useState(false);
@@ -530,8 +530,8 @@
             };
 
             const handleProcess = async () => {
-                if (!apiKey || experiments.every(exp => !exp.csvFile)) {
-                    setStatus({ type: 'error', message: 'Please provide API key and at least one CSV file' });
+                if (experiments.every(exp => !exp.csvFile)) {
+                    setStatus({ type: 'error', message: 'Please provide at least one CSV file' });
                     return;
                 }
 
@@ -743,26 +743,10 @@
                                 standardized CSVs, filled description template, and README files for each experiment.
                             </p>
 
-                            <div className="api-key-warning">
-                                ⚠️ This tool requires an Anthropic API key to use Claude AI for intelligent processing.
-                            </div>
-
                             <div className="form-section">
                                 <h3 className="form-section-title">
                                     <span>📋</span> Input Files
                                 </h3>
-
-                                <div className="form-group">
-                                    <label className="form-label">Anthropic API Key *</label>
-                                    <input
-                                        type="password"
-                                        className="form-input"
-                                        placeholder="sk-ant-api03-..."
-                                        value={apiKey}
-                                        onChange={(e) => setApiKey(e.target.value)}
-                                        disabled={isProcessing}
-                                    />
-                                </div>
 
                                 <div className="form-group">
                                     <label className="form-label">Research Paper PDF (Recommended)</label>
@@ -828,7 +812,7 @@
                                 <button 
                                     className="btn btn-primary"
                                     onClick={handleProcess}
-                                    disabled={isProcessing || !apiKey || experiments.every(exp => !exp.csvFile)}
+                                    disabled={isProcessing || experiments.every(exp => !exp.csvFile)}
                                 >
                                     {isProcessing ? (
                                         <>
