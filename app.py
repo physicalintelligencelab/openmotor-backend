@@ -1,13 +1,15 @@
 """
-OpenMotor Research Tools - Backend API Server
+OpenMotor Research Tools - Backend API Server with Unified Endpoint
 
 This Flask server provides API endpoints for the three OpenMotor tools:
 1. CSV Standardizer
 2. Description Template Filler  
 3. README Generator
 
+Plus a unified endpoint that runs all three in sequence.
+
 Requirements:
-pip install flask flask-cors pandas numpy anthropic PyPDF2 openpyxl python-multipart
+pip install flask flask-cors pandas numpy anthropic PyPDF2 openpyxl PyMuPDF gunicorn beautifulsoup4==4.12.2 lxml==4.9.3
 """
 
 from flask import Flask, request, jsonify, send_file
@@ -40,6 +42,8 @@ from bs4 import BeautifulSoup
 import re
 from urllib.parse import urljoin, quote
 import time
+import zipfile
+import io
 
 # just important the core functionality from modules
 
@@ -659,6 +663,181 @@ def health_check():
         'status': 'healthy',
         'timestamp': datetime.now().isoformat()
     })
+
+@app.route('/api/process-all', methods=['POST'])
+def process_all():
+    """Unified endpoint that processes everything in one go"""
+    try:
+        if 'api_key' not in request.form:
+            return jsonify({'error': 'API key is required'}), 400
+        
+        api_key = request.form['api_key']
+        pdf_file = request.files.get('pdf_file')
+        
+        # Collect all CSV files
+        csv_files = []
+        for key in request.files:
+            if key.startswith('csv_file_'):
+                csv_files.append(request.files[key])
+        
+        if not csv_files:
+            return jsonify({'error': 'At least one CSV file is required'}), 400
+        
+        # Save uploaded files
+        pdf_path = None
+        if pdf_file:
+            pdf_path = os.path.join(app.config['UPLOAD_FOLDER'], secure_filename(pdf_file.filename))
+            pdf_file.save(pdf_path)
+        
+        csv_paths = []
+        for csv_file in csv_files:
+            csv_path = os.path.join(app.config['UPLOAD_FOLDER'], secure_filename(csv_file.filename))
+            csv_file.save(csv_path)
+            csv_paths.append(csv_path)
+        
+        results = {
+            'standardized_files': [],
+            'template_file': None,
+            'readme_files': [],
+            'zip_file': None
+        }
+        
+        # Initialize processors
+        standardizer = OpenMotorStandardizer(api_key)
+        filler = OpenMotorTemplateFiller(api_key)
+        generator = OpenMotorReadmeGenerator(api_key)
+        
+        # Step 1: Standardize all CSVs
+        standardized_paths = []
+        for i, csv_path in enumerate(csv_paths, 1):
+            try:
+                standardized_df, quality_report = standardizer.standardize_csv(csv_path, pdf_path)
+                
+                # Save standardized CSV
+                output_filename = f'standardized_exp{i}.csv'
+                output_path = os.path.join(app.config['UPLOAD_FOLDER'], output_filename)
+                standardized_df.to_csv(output_path, index=False)
+                standardized_paths.append(output_path)
+                
+                results['standardized_files'].append({
+                    'filename': output_filename,
+                    'experiment_number': i,
+                    'report': quality_report,
+                    'download_url': f'/api/download/{output_filename}'
+                })
+            except Exception as e:
+                logger.error(f"Error standardizing CSV {i}: {str(e)}")
+                results['standardized_files'].append({
+                    'filename': None,
+                    'experiment_number': i,
+                    'error': str(e)
+                })
+        
+        # Step 2: Fill template using standardized CSVs
+        try:
+            template_df = filler.process_experiments(pdf_path, standardized_paths)
+            template_filename = 'OpenMotor_Description_Template_Filled.xlsx'
+            template_path = os.path.join(app.config['UPLOAD_FOLDER'], template_filename)
+            template_df.to_excel(template_path, index=False)
+            
+            results['template_file'] = {
+                'filename': template_filename,
+                'experiments_processed': len(template_df),
+                'download_url': f'/api/download/{template_filename}'
+            }
+        except Exception as e:
+            logger.error(f"Error filling template: {str(e)}")
+            results['template_file'] = {'error': str(e)}
+        
+        # Step 3: Generate README files
+        pdf_content = ""
+        if pdf_path:
+            pdf_content = generator.read_pdf(pdf_path)
+        
+        for i in range(1, len(csv_paths) + 1):
+            try:
+                readme_content = generator.generate_readme(pdf_content, i)
+                
+                if readme_content.strip() != "EXPERIMENT_NOT_FOUND":
+                    readme_filename = f'Exp{i}_readme.txt'
+                    readme_path = os.path.join(app.config['UPLOAD_FOLDER'], readme_filename)
+                    
+                    with open(readme_path, 'w', encoding='utf-8') as f:
+                        f.write(readme_content)
+                    
+                    results['readme_files'].append({
+                        'filename': readme_filename,
+                        'experiment_number': i,
+                        'download_url': f'/api/download/{readme_filename}',
+                        'preview': readme_content[:500] + '...' if len(readme_content) > 500 else readme_content
+                    })
+                else:
+                    results['readme_files'].append({
+                        'filename': None,
+                        'experiment_number': i,
+                        'error': f'Experiment {i} not found in paper'
+                    })
+            except Exception as e:
+                logger.error(f"Error generating README for experiment {i}: {str(e)}")
+                results['readme_files'].append({
+                    'filename': None,
+                    'experiment_number': i,
+                    'error': str(e)
+                })
+        
+        # Step 4: Create a zip file with all outputs
+        try:
+            zip_filename = f'OpenMotor_Results_{datetime.now().strftime("%Y%m%d_%H%M%S")}.zip'
+            zip_path = os.path.join(app.config['UPLOAD_FOLDER'], zip_filename)
+            
+            with zipfile.ZipFile(zip_path, 'w') as zipf:
+                # Add standardized CSVs
+                for item in results['standardized_files']:
+                    if item.get('filename'):
+                        file_path = os.path.join(app.config['UPLOAD_FOLDER'], item['filename'])
+                        if os.path.exists(file_path):
+                            zipf.write(file_path, item['filename'])
+                
+                # Add template
+                if results['template_file'] and results['template_file'].get('filename'):
+                    file_path = os.path.join(app.config['UPLOAD_FOLDER'], results['template_file']['filename'])
+                    if os.path.exists(file_path):
+                        zipf.write(file_path, results['template_file']['filename'])
+                
+                # Add READMEs
+                for item in results['readme_files']:
+                    if item.get('filename'):
+                        file_path = os.path.join(app.config['UPLOAD_FOLDER'], item['filename'])
+                        if os.path.exists(file_path):
+                            zipf.write(file_path, item['filename'])
+            
+            results['zip_file'] = {
+                'filename': zip_filename,
+                'download_url': f'/api/download/{zip_filename}'
+            }
+        except Exception as e:
+            logger.error(f"Error creating zip file: {str(e)}")
+            results['zip_file'] = {'error': str(e)}
+        
+        # Clean up original uploaded files
+        for csv_path in csv_paths:
+            if os.path.exists(csv_path):
+                os.remove(csv_path)
+        if pdf_path and os.path.exists(pdf_path):
+            os.remove(pdf_path)
+        
+        return jsonify({
+            'success': True,
+            'results': results,
+            'total_experiments': len(csv_paths)
+        })
+        
+    except Exception as e:
+        logger.error(f"Error in process_all: {str(e)}")
+        return jsonify({
+            'error': str(e),
+            'traceback': traceback.format_exc()
+        }), 500
 
 @app.route('/api/standardize', methods=['POST'])
 def standardize_csv():
